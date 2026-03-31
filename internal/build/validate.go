@@ -27,7 +27,7 @@ func ValidateRequest(r Request) E.Either[error, Request] {
 			r.File,
 			E.FromPredicate(
 				nonEmpty,
-				func(string) error { return errors.New("Dockerfile path is required") },
+				func(string) error { return errors.New("dockerfile path is required") },
 			),
 			E.MapTo[error, string](true),
 		),

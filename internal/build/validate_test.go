@@ -23,14 +23,14 @@ func TestValidateRequest_EmptyFile(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(r Request) error {
+	}, func(_ Request) error {
 		return errors.New("unexpected Right")
 	})(result)
 
 	if err == nil {
 		t.Error("expected error for empty Dockerfile path")
 	}
-	if err.Error() != "Dockerfile path is required" {
+	if err.Error() != "dockerfile path is required" {
 		t.Errorf("unexpected error message: %s", err.Error())
 	}
 }
@@ -51,7 +51,7 @@ func TestValidateRequest_EmptyTagList(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(r Request) error {
+	}, func(_ Request) error {
 		return errors.New("unexpected Right")
 	})(result)
 
@@ -79,7 +79,7 @@ func TestValidateRequest_BlankTagEntry(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(r Request) error {
+	}, func(_ Request) error {
 		return errors.New("unexpected Right")
 	})(result)
 
@@ -104,7 +104,7 @@ func TestValidateRequest_DefaultRequest(t *testing.T) {
 	}
 
 	var validated Request
-	_ = E.Fold(func(e error) error {
+	_ = E.Fold(func(_ error) error {
 		return errors.New("unexpected Left")
 	}, func(r Request) error {
 		validated = r
@@ -132,7 +132,7 @@ func TestValidateRequest_MultipleTags(t *testing.T) {
 	}
 
 	var validated Request
-	_ = E.Fold(func(e error) error {
+	_ = E.Fold(func(_ error) error {
 		return errors.New("unexpected Left")
 	}, func(r Request) error {
 		validated = r

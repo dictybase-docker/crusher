@@ -13,11 +13,11 @@ func TestRenderCommand_DefaultRequest(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != "container" {
-		t.Errorf("expected Name to be container, got %s", spec.Name)
+	if spec.Name != containerBinary {
+		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
 	}
 
-	expected := "container build --file Dockerfile --tag latest ."
+	expected := containerBinary + " build --file Dockerfile --tag latest ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
 	if actual != expected {
 		t.Errorf("expected %q, got %q", expected, actual)
@@ -32,11 +32,11 @@ func TestRenderCommand_RepeatedTags(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != "container" {
-		t.Errorf("expected Name to be container, got %s", spec.Name)
+	if spec.Name != containerBinary {
+		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
 	}
 
-	expected := "container build --file Dockerfile --tag latest --tag stable --tag v1.0.0 ."
+	expected := containerBinary + " build --file Dockerfile --tag latest --tag stable --tag v1.0.0 ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
 	if actual != expected {
 		t.Errorf("expected %q, got %q", expected, actual)
@@ -51,11 +51,11 @@ func TestRenderCommand_DockerfileOverride(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != "container" {
-		t.Errorf("expected Name to be container, got %s", spec.Name)
+	if spec.Name != containerBinary {
+		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
 	}
 
-	expected := "container build --file docker/Prod.Dockerfile --tag latest ."
+	expected := containerBinary + " build --file docker/Prod.Dockerfile --tag latest ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
 	if actual != expected {
 		t.Errorf("expected %q, got %q", expected, actual)
