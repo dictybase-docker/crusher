@@ -33,18 +33,14 @@ func Command() *cli.Command {
 	}
 }
 
-func RequestFromCommand(cmd *cli.Command) Request {
-	return Request{
-		File: cmd.String("file"),
-		Tags: cmd.StringSlice("tag"),
-	}
-}
-
 func Action(ctx context.Context, cmd *cli.Command) error {
-	req := RequestFromCommand(cmd)
-
-	program := F.Pipe2(
-		IOE.FromEither[error](ValidateRequest(req)),
+	program := F.Pipe4(
+		Request{
+			File: cmd.String("file"),
+			Tags: cmd.StringSlice("tag"),
+		},
+		ValidateRequest,
+		IOE.FromEither[error],
 		IOE.Map[error](RenderCommand),
 		IOE.Chain(func(spec CommandSpec) IOE.IOEither[error, struct{}] {
 			return Execute(ctx, spec)
