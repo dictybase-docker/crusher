@@ -39,13 +39,12 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 		Request{
 			File: cmd.String("file"),
 			Tags: cmd.StringSlice("tag"),
+			ctx:  ctx,
 		},
 		ValidateRequest,
 		IOE.FromEither[error],
 		IOE.Map[error](RenderCommand),
-		IOE.Chain(func(spec CommandSpec) IOE.IOEither[error, struct{}] {
-			return Execute(ctx, spec)
-		}),
+		IOE.Chain(Execute),
 		FP.ToEither[error, struct{}],
 		E.Fold(
 			F.Identity[error],

@@ -1,9 +1,16 @@
 package build
 
-// Request holds the validated build parameters extracted from CLI flags.
+import "context"
+
+const containerBinary = "container"
+
+// Request holds the build parameters throughout the pipeline.
+// It carries the CLI inputs, execution context, and resolved command spec.
 type Request struct {
 	File string
 	Tags []string
+	ctx  context.Context
+	CommandSpec
 }
 
 // CommandSpec holds the resolved executable name and argv slice.

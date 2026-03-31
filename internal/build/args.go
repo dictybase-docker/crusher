@@ -11,17 +11,22 @@ func repeated(flag string) func([]string) []string {
 	})
 }
 
-func RenderCommand(r Request) CommandSpec {
-	return CommandSpec{
-		Name: "container",
-		Args: F.Pipe1(
-			[][]string{
-				{"build"},
-				{"--file", r.File},
-				F.Pipe1(r.Tags, repeated("--tag")),
-				{"."},
-			},
-			A.Flatten[string],
-		),
+func RenderCommand(r Request) Request {
+	return Request{
+		File: r.File,
+		Tags: r.Tags,
+		ctx:  r.ctx,
+		CommandSpec: CommandSpec{
+			Name: containerBinary,
+			Args: F.Pipe1(
+				[][]string{
+					{"build"},
+					{"--file", r.File},
+					F.Pipe1(r.Tags, repeated("--tag")),
+					{"."},
+				},
+				A.Flatten[string],
+			),
+		},
 	}
 }
