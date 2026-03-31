@@ -9,7 +9,7 @@ const containerBinary = "container"
 type Request struct {
 	File string
 	Tags []string
-	ctx  context.Context
+	Ctx  context.Context
 	CommandSpec
 }
 

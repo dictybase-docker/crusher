@@ -15,7 +15,7 @@ func RenderCommand(r Request) Request {
 	return Request{
 		File: r.File,
 		Tags: r.Tags,
-		ctx:  r.ctx,
+		Ctx:  r.Ctx,
 		CommandSpec: CommandSpec{
 			Name: containerBinary,
 			Args: F.Pipe1(

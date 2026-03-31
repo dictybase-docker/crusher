@@ -39,7 +39,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 		Request{
 			File: cmd.String("file"),
 			Tags: cmd.StringSlice("tag"),
-			ctx:  ctx,
+			Ctx:  ctx,
 		},
 		ValidateRequest,
 		IOE.FromEither[error],
