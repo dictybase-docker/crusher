@@ -8,6 +8,7 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 	"github.com/urfave/cli/v3"
 )
 
@@ -34,7 +35,7 @@ func Command() *cli.Command {
 }
 
 func Action(ctx context.Context, cmd *cli.Command) error {
-	program := F.Pipe4(
+	return F.Pipe6(
 		Request{
 			File: cmd.String("file"),
 			Tags: cmd.StringSlice("tag"),
@@ -45,10 +46,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 		IOE.Chain(func(spec CommandSpec) IOE.IOEither[error, struct{}] {
 			return Execute(ctx, spec)
 		}),
-	)
-
-	return F.Pipe1(
-		program(),
+		FP.ToEither[error, struct{}],
 		E.Fold(
 			F.Identity[error],
 			func(struct{}) error { return nil },
