@@ -12,6 +12,18 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// resolverFactories is a map-based dispatch table that selects the Dockerfile
+// resolver strategy based on the --embed flag. This is the ONLY location
+// where the boolean is observed — no if/else anywhere in application code.
+var resolverFactories = map[bool]func(*cli.Command) IOE.IOEither[error, DockerfileResource]{
+	false: func(cmd *cli.Command) IOE.IOEither[error, DockerfileResource] {
+		return FileResolver(cmd.String("file"))
+	},
+	true: func(_ *cli.Command) IOE.IOEither[error, DockerfileResource] {
+		return EmbeddedResolver()
+	},
+}
+
 func Command() *cli.Command {
 	return &cli.Command{
 		Name:  "build",
@@ -35,22 +47,33 @@ func Command() *cli.Command {
 				Usage:   "Image name (combines with tags as name:tag)",
 				Value:   "container",
 			},
+			&cli.BoolFlag{
+				Name:  "embed",
+				Usage: "Use the Dockerfile embedded in the binary (ignores --file)",
+			},
 		},
 		Action: Action,
 	}
 }
 
+// InputFromCommand reads CLI flags and selects the Dockerfile resolver
+// via the map-based dispatch table.
+func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
+	return Input{
+		DockerfileSource: resolverFactories[cmd.Bool("embed")](cmd),
+		Name:             cmd.String("name"),
+		Tags:             cmd.StringSlice("tag"),
+		Ctx:              ctx,
+	}
+}
+
+// Action is the build subcommand entry point.
+// Pipeline: validate tags → acquire dockerfile → render args → run process → release.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	return F.Pipe6(
-		Input{
-			File: cmd.String("file"),
-			Name: cmd.String("name"),
-			Tags: cmd.StringSlice("tag"),
-			Ctx:  ctx,
-		},
+	return F.Pipe5(
+		InputFromCommand(ctx, cmd),
 		ValidateInput,
 		IOE.FromEither[error],
-		IOE.Map[error](RenderCommand),
 		IOE.Chain(Execute),
 		FP.ToEither[error, struct{}],
 		E.Fold(
