@@ -5,10 +5,8 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 )
 
-func repeated(flag string) func([]string) []string {
-	return A.Chain(func(value string) []string {
-		return []string{flag, value}
-	})
+func renderTagArgs(tag string) []string {
+	return []string{"--tag", tag}
 }
 
 func RenderCommand(r Input) Input {
@@ -18,14 +16,10 @@ func RenderCommand(r Input) Input {
 		Ctx:  r.Ctx,
 		CommandSpec: CommandSpec{
 			Name: containerBinary,
-			Args: F.Pipe1(
-				[][]string{
-					{"build"},
-					{"--file", r.File},
-					F.Pipe1(r.Tags, repeated("--tag")),
-					{"."},
-				},
-				A.Flatten[string],
+			Args: A.ArrayConcatAll(
+				[]string{"build", "--file", r.File},
+				F.Pipe1(r.Tags, A.Chain(renderTagArgs)),
+				[]string{"."},
 			),
 		},
 	}
