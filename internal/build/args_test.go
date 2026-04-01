@@ -3,9 +3,12 @@ package build
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRenderCommand_DefaultInput(t *testing.T) {
+	require := require.New(t)
 	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest"},
@@ -13,18 +16,15 @@ func TestRenderCommand_DefaultInput(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != containerBinary {
-		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
-	}
+	require.Equal(containerBinary, spec.Name)
 
 	expected := containerBinary + " build --file Dockerfile --tag latest ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
-	if actual != expected {
-		t.Errorf("expected %q, got %q", expected, actual)
-	}
+	require.Equal(expected, actual)
 }
 
 func TestRenderCommand_RepeatedTags(t *testing.T) {
+	require := require.New(t)
 	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest", "stable", "v1.0.0"},
@@ -32,18 +32,15 @@ func TestRenderCommand_RepeatedTags(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != containerBinary {
-		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
-	}
+	require.Equal(containerBinary, spec.Name)
 
 	expected := containerBinary + " build --file Dockerfile --tag latest --tag stable --tag v1.0.0 ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
-	if actual != expected {
-		t.Errorf("expected %q, got %q", expected, actual)
-	}
+	require.Equal(expected, actual)
 }
 
 func TestRenderCommand_DockerfileOverride(t *testing.T) {
+	require := require.New(t)
 	req := Input{
 		File: "docker/Prod.Dockerfile",
 		Tags: []string{"latest"},
@@ -51,18 +48,15 @@ func TestRenderCommand_DockerfileOverride(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if spec.Name != containerBinary {
-		t.Errorf("expected Name to be %s, got %s", containerBinary, spec.Name)
-	}
+	require.Equal(containerBinary, spec.Name)
 
 	expected := containerBinary + " build --file docker/Prod.Dockerfile --tag latest ."
 	actual := spec.Name + " " + strings.Join(spec.Args, " ")
-	if actual != expected {
-		t.Errorf("expected %q, got %q", expected, actual)
-	}
+	require.Equal(expected, actual)
 }
 
 func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
+	require := require.New(t)
 	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest"},
@@ -70,18 +64,14 @@ func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if len(spec.Args) == 0 {
-		t.Error("expected non-empty Args")
-		return
-	}
+	require.NotEmpty(spec.Args)
 
 	lastArg := spec.Args[len(spec.Args)-1]
-	if lastArg != "." {
-		t.Errorf("expected final arg to be ., got %q", lastArg)
-	}
+	require.Equal(".", lastArg)
 }
 
 func TestRenderCommand_ArgsOrder(t *testing.T) {
+	require := require.New(t)
 	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest", "stable"},
@@ -89,30 +79,13 @@ func TestRenderCommand_ArgsOrder(t *testing.T) {
 
 	spec := RenderCommand(req)
 
-	if len(spec.Args) < 7 {
-		t.Errorf("expected at least 7 args, got %d", len(spec.Args))
-		return
-	}
+	require.GreaterOrEqual(len(spec.Args), 7)
 
-	if spec.Args[0] != "build" {
-		t.Errorf("expected first arg to be build, got %q", spec.Args[0])
-	}
-	if spec.Args[1] != "--file" {
-		t.Errorf("expected second arg to be --file, got %q", spec.Args[1])
-	}
-	if spec.Args[2] != "Dockerfile" {
-		t.Errorf("expected third arg to be Dockerfile, got %q", spec.Args[2])
-	}
-	if spec.Args[3] != "--tag" {
-		t.Errorf("expected fourth arg to be --tag, got %q", spec.Args[3])
-	}
-	if spec.Args[4] != "latest" {
-		t.Errorf("expected fifth arg to be latest, got %q", spec.Args[4])
-	}
-	if spec.Args[5] != "--tag" {
-		t.Errorf("expected sixth arg to be --tag, got %q", spec.Args[5])
-	}
-	if spec.Args[6] != "stable" {
-		t.Errorf("expected seventh arg to be stable, got %q", spec.Args[6])
-	}
+	require.Equal("build", spec.Args[0])
+	require.Equal("--file", spec.Args[1])
+	require.Equal("Dockerfile", spec.Args[2])
+	require.Equal("--tag", spec.Args[3])
+	require.Equal("latest", spec.Args[4])
+	require.Equal("--tag", spec.Args[5])
+	require.Equal("stable", spec.Args[6])
 }
