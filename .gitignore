@@ -17,3 +17,4 @@ container-cli
 # Go workspace
 go.work
 .crush
+crusher
