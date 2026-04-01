@@ -37,14 +37,11 @@ func FileResolver(path string) IOE.IOEither[error, DockerfileResource] {
 	)
 }
 
-// writeContentAndReturnName writes the embedded content to the file and
-// returns the file's Name(). This is the Kleisli arrow passed to
-// IOEF.Write — the bracket guarantees the file is closed even if the
-// write fails.
-func writeContentAndReturnName(
-	content []byte,
-) func(*os.File) IOE.IOEither[error, string] {
-	return func(f *os.File) IOE.IOEither[error, string] {
+// writeAndReturnPath writes the embedded content to the file and
+// returns the file's Name(). Curried via F.Curry2 — the bracket guarantees
+// the file is closed even if the write fails.
+var writeAndReturnPath = F.Curry2(
+	func(content []byte, f *os.File) IOE.IOEither[error, string] {
 		return F.Pipe1(
 			IOE.TryCatchError(func() (int, error) {
 				return f.Write(content)
@@ -53,8 +50,8 @@ func writeContentAndReturnName(
 				return f.Name()
 			}),
 		)
-	}
-}
+	},
+)
 
 // toDockerfileResource constructs a DockerfileResource from the temp file name.
 func toDockerfileResource(name string) DockerfileResource {
@@ -64,9 +61,9 @@ func toDockerfileResource(name string) DockerfileResource {
 // EmbeddedResolver writes the compile-time embedded Dockerfile content to a
 // temp file and returns a DockerfileResource whose Release removes that file.
 func EmbeddedResolver() IOE.IOEither[error, DockerfileResource] {
-	content := []byte(embeddedDockerfile)
-	acquire := IOEF.CreateTemp("", "Dockerfile-*")
-	writeFile := IOEF.Write[string](acquire)(writeContentAndReturnName(content))
+	reader := IOEF.CreateTemp("", "Dockerfile-*")
+	writeTo := writeAndReturnPath([]byte(embeddedDockerfile))
+	writeFile := IOEF.Write[string](reader)(writeTo)
 
 	return F.Pipe1(
 		writeFile,
