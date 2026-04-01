@@ -18,6 +18,8 @@ var (
 		P.ContraMap(strings.TrimSpace),
 	)
 
+	isNonBlank = P.Not(isBlank)
+
 	// A tag list is valid when it has at least one item and none of them
 	// are blank after trimming whitespace.
 	isAllNonBlank = F.Pipe1(
@@ -31,7 +33,7 @@ func ValidateInput(r Input) E.Either[error, Input] {
 		F.Pipe2(
 			r.File,
 			E.FromPredicate(
-				P.Not(isBlank),
+				isNonBlank,
 				func(string) error {
 					return errors.New("dockerfile path is required")
 				},
