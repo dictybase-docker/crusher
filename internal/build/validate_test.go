@@ -8,29 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateInput_EmptyFile(t *testing.T) {
-	require := require.New(t)
-	req := Input{
-		File: "",
-		Tags: []string{"latest"},
-	}
-
-	result := ValidateInput(req)
-
-	require.True(E.IsLeft(result), "expected Left for empty Dockerfile path")
-
-	err := F.Pipe1(
-		result,
-		E.Fold(F.Identity[error], func(Input) error { return nil }),
-	)
-	require.NotNil(err)
-	require.EqualError(err, "dockerfile path is required")
-}
-
 func TestValidateInput_EmptyTagList(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		File: "Dockerfile",
 		Tags: []string{},
 	}
 
@@ -49,7 +29,6 @@ func TestValidateInput_EmptyTagList(t *testing.T) {
 func TestValidateInput_BlankTagEntry(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		File: "Dockerfile",
 		Tags: []string{"latest", ""},
 	}
 
@@ -68,7 +47,7 @@ func TestValidateInput_BlankTagEntry(t *testing.T) {
 func TestValidateInput_DefaultInput(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		File: "Dockerfile",
+		Name: "myapp",
 		Tags: []string{"latest"},
 	}
 
@@ -80,14 +59,14 @@ func TestValidateInput_DefaultInput(t *testing.T) {
 		result,
 		E.Fold(func(error) Input { return Input{} }, F.Identity[Input]),
 	)
-	require.Equal("Dockerfile", validated.File)
+	require.Equal("myapp", validated.Name)
 	require.Equal([]string{"latest"}, validated.Tags)
 }
 
 func TestValidateInput_MultipleTags(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		File: "docker/Prod.Dockerfile",
+		Name: "myapp",
 		Tags: []string{"latest", "stable", "v1.0.0"},
 	}
 
@@ -99,6 +78,6 @@ func TestValidateInput_MultipleTags(t *testing.T) {
 		result,
 		E.Fold(func(error) Input { return Input{} }, F.Identity[Input]),
 	)
-	require.Equal("docker/Prod.Dockerfile", validated.File)
+	require.Equal("myapp", validated.Name)
 	require.Equal([]string{"latest", "stable", "v1.0.0"}, validated.Tags)
 }

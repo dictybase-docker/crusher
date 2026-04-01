@@ -29,31 +29,14 @@ var (
 )
 
 func ValidateInput(r Input) E.Either[error, Input] {
-	validations := []E.Either[error, bool]{
-		F.Pipe2(
-			r.File,
-			E.FromPredicate(
-				isNonBlank,
-				func(string) error {
-					return errors.New("dockerfile path is required")
-				},
-			),
-			E.MapTo[error, string](true),
+	return F.Pipe2(
+		r.Tags,
+		E.FromPredicate(
+			isAllNonBlank,
+			func([]string) error {
+				return errors.New("tag values must be non-empty")
+			},
 		),
-		F.Pipe2(
-			r.Tags,
-			E.FromPredicate(
-				isAllNonBlank,
-				func([]string) error {
-					return errors.New("tag values must be non-empty")
-				},
-			),
-			E.MapTo[error, []string](true),
-		),
-	}
-
-	return F.Pipe1(
-		E.SequenceArray(validations),
-		E.MapTo[error, []bool](r),
+		E.MapTo[error, []string](r),
 	)
 }
