@@ -26,7 +26,7 @@ var (
 	)
 )
 
-func ValidateRequest(r Request) E.Either[error, Request] {
+func ValidateInput(r Input) E.Either[error, Input] {
 	validations := []E.Either[error, bool]{
 		F.Pipe2(
 			r.File,

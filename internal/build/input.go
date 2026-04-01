@@ -4,9 +4,9 @@ import "context"
 
 const containerBinary = "container"
 
-// Request holds the build parameters throughout the pipeline.
+// Input holds the build parameters throughout the pipeline.
 // It carries the CLI inputs, execution context, and resolved command spec.
-type Request struct {
+type Input struct {
 	File string
 	Tags []string
 	Ctx  context.Context

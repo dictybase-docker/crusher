@@ -8,7 +8,7 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 )
 
-func Execute(r Request) IOE.IOEither[error, struct{}] {
+func Execute(r Input) IOE.IOEither[error, struct{}] {
 	return IOE.TryCatchError(func() (struct{}, error) {
 		cmd := exec.CommandContext(r.Ctx, containerBinary)
 		cmd.Args = append(cmd.Args, r.Args...)

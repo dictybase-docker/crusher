@@ -7,13 +7,13 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 )
 
-func TestValidateRequest_EmptyFile(t *testing.T) {
-	req := Request{
+func TestValidateInput_EmptyFile(t *testing.T) {
+	req := Input{
 		File: "",
 		Tags: []string{"latest"},
 	}
 
-	result := ValidateRequest(req)
+	result := ValidateInput(req)
 
 	if E.IsRight(result) {
 		t.Error("expected Left for empty Dockerfile path")
@@ -23,7 +23,7 @@ func TestValidateRequest_EmptyFile(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(_ Request) error {
+	}, func(_ Input) error {
 		return errors.New("unexpected Right")
 	})(result)
 
@@ -35,13 +35,13 @@ func TestValidateRequest_EmptyFile(t *testing.T) {
 	}
 }
 
-func TestValidateRequest_EmptyTagList(t *testing.T) {
-	req := Request{
+func TestValidateInput_EmptyTagList(t *testing.T) {
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{},
 	}
 
-	result := ValidateRequest(req)
+	result := ValidateInput(req)
 
 	if E.IsRight(result) {
 		t.Error("expected Left for empty tag list")
@@ -51,7 +51,7 @@ func TestValidateRequest_EmptyTagList(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(_ Request) error {
+	}, func(_ Input) error {
 		return errors.New("unexpected Right")
 	})(result)
 
@@ -63,13 +63,13 @@ func TestValidateRequest_EmptyTagList(t *testing.T) {
 	}
 }
 
-func TestValidateRequest_BlankTagEntry(t *testing.T) {
-	req := Request{
+func TestValidateInput_BlankTagEntry(t *testing.T) {
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest", ""},
 	}
 
-	result := ValidateRequest(req)
+	result := ValidateInput(req)
 
 	if E.IsRight(result) {
 		t.Error("expected Left for blank tag entry")
@@ -79,7 +79,7 @@ func TestValidateRequest_BlankTagEntry(t *testing.T) {
 	_ = E.Fold(func(e error) error {
 		err = e
 		return nil
-	}, func(_ Request) error {
+	}, func(_ Input) error {
 		return errors.New("unexpected Right")
 	})(result)
 
@@ -91,22 +91,22 @@ func TestValidateRequest_BlankTagEntry(t *testing.T) {
 	}
 }
 
-func TestValidateRequest_DefaultRequest(t *testing.T) {
-	req := Request{
+func TestValidateInput_DefaultInput(t *testing.T) {
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest"},
 	}
 
-	result := ValidateRequest(req)
+	result := ValidateInput(req)
 
 	if E.IsLeft(result) {
-		t.Error("expected Right for default request")
+		t.Error("expected Right for default input")
 	}
 
-	var validated Request
+	var validated Input
 	_ = E.Fold(func(_ error) error {
 		return errors.New("unexpected Left")
-	}, func(r Request) error {
+	}, func(r Input) error {
 		validated = r
 		return nil
 	})(result)
@@ -119,22 +119,22 @@ func TestValidateRequest_DefaultRequest(t *testing.T) {
 	}
 }
 
-func TestValidateRequest_MultipleTags(t *testing.T) {
-	req := Request{
+func TestValidateInput_MultipleTags(t *testing.T) {
+	req := Input{
 		File: "docker/Prod.Dockerfile",
 		Tags: []string{"latest", "stable", "v1.0.0"},
 	}
 
-	result := ValidateRequest(req)
+	result := ValidateInput(req)
 
 	if E.IsLeft(result) {
-		t.Error("expected Right for valid request with multiple tags")
+		t.Error("expected Right for valid build input with multiple tags")
 	}
 
-	var validated Request
+	var validated Input
 	_ = E.Fold(func(_ error) error {
 		return errors.New("unexpected Left")
-	}, func(r Request) error {
+	}, func(r Input) error {
 		validated = r
 		return nil
 	})(result)

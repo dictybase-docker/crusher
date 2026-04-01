@@ -36,12 +36,12 @@ func Command() *cli.Command {
 
 func Action(ctx context.Context, cmd *cli.Command) error {
 	return F.Pipe6(
-		Request{
+		Input{
 			File: cmd.String("file"),
 			Tags: cmd.StringSlice("tag"),
 			Ctx:  ctx,
 		},
-		ValidateRequest,
+		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Map[error](RenderCommand),
 		IOE.Chain(Execute),

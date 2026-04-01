@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestRenderCommand_DefaultRequest(t *testing.T) {
-	req := Request{
+func TestRenderCommand_DefaultInput(t *testing.T) {
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest"},
 	}
@@ -25,7 +25,7 @@ func TestRenderCommand_DefaultRequest(t *testing.T) {
 }
 
 func TestRenderCommand_RepeatedTags(t *testing.T) {
-	req := Request{
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest", "stable", "v1.0.0"},
 	}
@@ -44,7 +44,7 @@ func TestRenderCommand_RepeatedTags(t *testing.T) {
 }
 
 func TestRenderCommand_DockerfileOverride(t *testing.T) {
-	req := Request{
+	req := Input{
 		File: "docker/Prod.Dockerfile",
 		Tags: []string{"latest"},
 	}
@@ -63,7 +63,7 @@ func TestRenderCommand_DockerfileOverride(t *testing.T) {
 }
 
 func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
-	req := Request{
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest"},
 	}
@@ -82,7 +82,7 @@ func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 }
 
 func TestRenderCommand_ArgsOrder(t *testing.T) {
-	req := Request{
+	req := Input{
 		File: "Dockerfile",
 		Tags: []string{"latest", "stable"},
 	}

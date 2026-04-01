@@ -11,8 +11,8 @@ func repeated(flag string) func([]string) []string {
 	})
 }
 
-func RenderCommand(r Request) Request {
-	return Request{
+func RenderCommand(r Input) Input {
+	return Input{
 		File: r.File,
 		Tags: r.Tags,
 		Ctx:  r.Ctx,
