@@ -56,6 +56,11 @@ func writeContentAndReturnName(
 	}
 }
 
+// toDockerfileResource constructs a DockerfileResource from the temp file name.
+func toDockerfileResource(name string) DockerfileResource {
+	return DockerfileResource{Path: name, Release: IOEF.Remove(name)}
+}
+
 // EmbeddedResolver writes the compile-time embedded Dockerfile content to a
 // temp file and returns a DockerfileResource whose Release removes that file.
 //
@@ -81,17 +86,11 @@ func writeContentAndReturnName(
 // of the byte count.
 func EmbeddedResolver() IOE.IOEither[error, DockerfileResource] {
 	content := []byte(embeddedDockerfile)
+	acquire := IOEF.CreateTemp("", "Dockerfile-*")
+	writeFile := IOEF.Write[string](acquire)(writeContentAndReturnName(content))
 
 	return F.Pipe1(
-		F.Pipe1(
-			IOEF.CreateTemp("", "Dockerfile-*"),
-			IOEF.Write[string, *os.File],
-		)(writeContentAndReturnName(content)),
-		IOE.Map[error](func(name string) DockerfileResource {
-			return DockerfileResource{
-				Path:    name,
-				Release: IOEF.Remove(name),
-			}
-		}),
+		writeFile,
+		IOE.Map[error](toDockerfileResource),
 	)
 }
