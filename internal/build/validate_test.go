@@ -58,7 +58,7 @@ func TestValidateRequest_EmptyTagList(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for empty tag list")
 	}
-	if err.Error() != "at least one tag is required" {
+	if err.Error() != "tag values must be non-empty" {
 		t.Errorf("unexpected error message: %s", err.Error())
 	}
 }
