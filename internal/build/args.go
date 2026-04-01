@@ -19,19 +19,16 @@ func renderTagArgs(r Input) []string {
 	)
 }
 
-func RenderCommand(r Input) Input {
-	return Input{
-		File: r.File,
-		Name: r.Name,
-		Tags: r.Tags,
-		Ctx:  r.Ctx,
-		CommandSpec: CommandSpec{
-			Bin: containerBinary,
-			Args: A.ArrayConcatAll(
-				[]string{"build", "--file", r.File},
-				renderTagArgs(r),
-				[]string{"."},
-			),
-		},
+// RenderCommand is a pure function that builds a CommandSpec from an Input
+// and a resolved Dockerfile path. Called inside Execute after the
+// DockerfileResource is acquired.
+func RenderCommand(r Input, path string) CommandSpec {
+	return CommandSpec{
+		Bin: containerBinary,
+		Args: A.ArrayConcatAll(
+			[]string{"build", "--file", path},
+			renderTagArgs(r),
+			[]string{"."},
+		),
 	}
 }
