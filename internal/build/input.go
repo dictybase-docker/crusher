@@ -8,13 +8,14 @@ const containerBinary = "container"
 // It carries the CLI inputs, execution context, and resolved command spec.
 type Input struct {
 	File string
+	Name string
 	Tags []string
 	Ctx  context.Context
 	CommandSpec
 }
 
-// CommandSpec holds the resolved executable name and argv slice.
+// CommandSpec holds the resolved executable binary and argv slice.
 type CommandSpec struct {
-	Name string
+	Bin  string
 	Args []string
 }

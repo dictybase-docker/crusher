@@ -3,22 +3,31 @@ package build
 import (
 	A "github.com/IBM/fp-go/v2/array"
 	F "github.com/IBM/fp-go/v2/function"
+	S "github.com/IBM/fp-go/v2/string"
 )
 
-func renderTagArgs(tag string) []string {
-	return []string{"--tag", tag}
+var nameTag = S.IntersperseSemigroup(":")
+
+func renderTagArgs(r Input) []string {
+	return F.Pipe1(
+		r.Tags,
+		A.Chain(func(tag string) []string {
+			return A.From("--tag", nameTag.Concat(r.Name, tag))
+		}),
+	)
 }
 
 func RenderCommand(r Input) Input {
 	return Input{
 		File: r.File,
+		Name: r.Name,
 		Tags: r.Tags,
 		Ctx:  r.Ctx,
 		CommandSpec: CommandSpec{
-			Name: containerBinary,
+			Bin: containerBinary,
 			Args: A.ArrayConcatAll(
 				[]string{"build", "--file", r.File},
-				F.Pipe1(r.Tags, A.Chain(renderTagArgs)),
+				renderTagArgs(r),
 				[]string{"."},
 			),
 		},

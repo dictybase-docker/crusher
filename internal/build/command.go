@@ -29,6 +29,12 @@ func Command() *cli.Command {
 				Usage:   "Image tag, repeatable",
 				Value:   []string{"latest"},
 			},
+			&cli.StringFlag{
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "Image name (combines with tags as name:tag)",
+				Value:   "container",
+			},
 		},
 		Action: Action,
 	}
@@ -38,6 +44,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 	return F.Pipe6(
 		Input{
 			File: cmd.String("file"),
+			Name: cmd.String("name"),
 			Tags: cmd.StringSlice("tag"),
 			Ctx:  ctx,
 		},
