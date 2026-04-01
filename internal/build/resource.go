@@ -63,27 +63,6 @@ func toDockerfileResource(name string) DockerfileResource {
 
 // EmbeddedResolver writes the compile-time embedded Dockerfile content to a
 // temp file and returns a DockerfileResource whose Release removes that file.
-//
-// Pipeline (all IOEither combinators, no if/else):
-//
-//  1. IOEF.CreateTemp("", "Dockerfile-*")        → IOEither[error, *os.File]
-//     (acquire for the Write bracket)
-//
-//  2. IOEF.Write[string, *os.File](acquire)      → bracket: acquire → use → close
-//     (writeContentAndReturnName)                   Kleisli writes content, returns Name()
-//     File is ALWAYS closed (bracket guarantee)
-//
-//  3. IOE.Map → DockerfileResource                → wires IOEF.Remove(name) as Release
-//
-// This follows the same pattern as 04_interface_helpers.go:
-//
-//	F.Pipe1(
-//	    IOEF.Create(path),
-//	    IOEF.Write[int, *os.File],
-//	)(writeKleisli)
-//
-// but using CreateTemp instead of Create, and returning the path instead
-// of the byte count.
 func EmbeddedResolver() IOE.IOEither[error, DockerfileResource] {
 	content := []byte(embeddedDockerfile)
 	acquire := IOEF.CreateTemp("", "Dockerfile-*")
