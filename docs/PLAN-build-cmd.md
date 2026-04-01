@@ -201,7 +201,7 @@ cmd/
     main.go
 internal/
   build/
-    request.go
+    input.go
     validate.go
     args.go
     exec.go
@@ -214,7 +214,7 @@ Reasons:
 
 - `cmd/.../main.go` matches the inspected CLI references
 - `internal/build` isolates the single concrete subcommand
-- `request.go` holds the domain type; `command.go` holds the CLI wiring and action pipeline
+- `input.go` holds the domain type; `command.go` holds the CLI wiring and action pipeline
 - no `internal/fputil` or `internal/app` — the pipeline is flat enough to not need conversion helpers or a separate app package
 
 ## 7. Root Command Contract
@@ -312,8 +312,8 @@ func Command() *cli.Command {
 ```go
 package build
 
-// Request holds the validated build parameters extracted from CLI flags.
-type Request struct {
+// Input holds the validated build parameters extracted from CLI flags.
+type Input struct {
     File string
     Tags []string
 }
@@ -325,7 +325,7 @@ type CommandSpec struct {
 }
 ```
 
-Only two types are needed. The pipeline threads `Request → CommandSpec → unit`
+Only two types are needed. The pipeline threads `Input → CommandSpec → unit`
 through a flat `F.Pipe` chain — no accumulator struct required.
 
 ## 10. Validation Plan
@@ -362,7 +362,7 @@ func allNonEmpty(values []string) bool {
     )
 }
 
-func ValidateRequest(r Request) E.Either[error, Request] {
+func ValidateInput(r Input) E.Either[error, Input] {
     validations := []E.Either[error, bool]{
         F.Pipe2(
             r.File,
@@ -409,8 +409,8 @@ package build
 
 import "github.com/urfave/cli/v3"
 
-func RequestFromCommand(cmd *cli.Command) Request {
-    return Request{
+func InputFromCommand(cmd *cli.Command) Input {
+    return Input{
         File: cmd.String("file"),
         Tags: cmd.StringSlice("tag"),
     }
@@ -423,7 +423,7 @@ The wrapper must avoid shell string construction. It must build an argv slice an
 
 ### 12.1 Rendering rule
 
-Given a valid `Request`, emit:
+Given a valid `Input`, emit:
 
 ```text
 container build --file <path> --tag <value> ... .
@@ -445,7 +445,7 @@ func repeated(flag string) func([]string) []string {
     })
 }
 
-func RenderCommand(r Request) CommandSpec {
+func RenderCommand(r Input) CommandSpec {
     return CommandSpec{
         Name: "container",
         Args: F.Pipe1(
@@ -528,10 +528,10 @@ import (
 )
 
 func Action(ctx context.Context, cmd *cli.Command) error {
-    req := RequestFromCommand(cmd)
+    req := InputFromCommand(cmd)
 
     program := F.Pipe3(
-        IOE.FromEither[error](ValidateRequest(req)),
+        IOE.FromEither[error](ValidateInput(req)),
         IOE.Map[error](RenderCommand),
         IOE.Chain(func(spec CommandSpec) IOE.IOEither[error, struct{}] {
             return Execute(ctx, spec)
@@ -551,10 +551,10 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 ### Pipeline shape
 
 ```text
-Request
-  → ValidateRequest        (pure: Either[error, Request])
+Input
+  → ValidateInput        (pure: Either[error, Input])
   → IOE.FromEither         (lift into IOEither)
-  → IOE.Map(RenderCommand) (pure: Request → CommandSpec)
+  → IOE.Map(RenderCommand) (pure: Input → CommandSpec)
   → IOE.Chain(Execute)     (effect: CommandSpec → IOEither[error, struct{}])
   → program()              (run the lazy IO)
   → E.Fold(…)              (terminal: Either → error)
@@ -575,7 +575,7 @@ Grounding:
 
 `internal/build/args_test.go` must cover:
 
-- default request renders `container build --file Dockerfile --tag latest .`
+- default input renders `container build --file Dockerfile --tag latest .`
 - repeated `--tag` values preserve order
 - Dockerfile override renders the supplied path
 - final argv item remains `.`
@@ -585,14 +585,14 @@ Grounding:
 - empty Dockerfile path returns `Left`
 - empty tag list returns `Left`
 - blank tag entry returns `Left`
-- default request returns `Right`
+- default input returns `Right`
 
 `internal/build/action_test.go` must keep process execution injectable so tests can verify constructed `CommandSpec` without executing a real `container` binary.
 
 ### 16.2 Testability
 
 Since `Execute` accepts a `CommandSpec`, tests can verify the full pipeline
-up to the point of execution by calling `ValidateRequest` and `RenderCommand`
+up to the point of execution by calling `ValidateInput` and `RenderCommand`
 directly — both are pure functions. Integration tests that need to mock
 process execution can inject a replacement `Execute` function:
 
@@ -612,11 +612,11 @@ go test ./...
 
 1. Update `go.mod` with `urfave/cli/v3` and `fp-go/v2`
 2. Add `cmd/container-cli/main.go`
-3. Add `internal/build/request.go` (Request, CommandSpec types)
+3. Add `internal/build/input.go` (Input, CommandSpec types)
 4. Add `internal/build/validate.go`
 5. Add `internal/build/args.go`
 6. Add `internal/build/exec.go`
-7. Add `internal/build/command.go` (Command(), Action, RequestFromCommand)
+7. Add `internal/build/command.go` (Command(), Action, InputFromCommand)
 8. Add `internal/build/validate_test.go`
 9. Add `internal/build/args_test.go`
 10. Run `go test ./...`

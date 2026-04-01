@@ -50,12 +50,12 @@ cmd/
     main.go              # Entry point – root cli.Command, wires build.Command()
 internal/
   build/
-    request.go           # Request and CommandSpec domain types
+    input.go           # Input and CommandSpec domain types
     validate.go          # Pure Either-based validation
-    args.go              # Pure argv rendering (Request → CommandSpec)
+    args.go              # Pure argv rendering (Input → CommandSpec)
     exec.go              # IOEither-based process execution
-    command.go           # cli.Command(), Action, RequestFromCommand
-    validate_test.go     # Unit tests for ValidateRequest
+    command.go           # cli.Command(), Action, InputFromCommand
+    validate_test.go     # Unit tests for ValidateInput
     args_test.go         # Unit tests for RenderCommand
 docs/
   PLAN-build-cmd.md      # Detailed implementation plan (ground truth for architecture)
@@ -141,10 +141,10 @@ These rules are **non-negotiable** and apply to all code in `internal/`:
 
 ```go
 func Action(ctx context.Context, cmd *cli.Command) error {
-    req := RequestFromCommand(cmd)
+    req := InputFromCommand(cmd)
 
     program := F.Pipe3(
-        IOE.FromEither[error](ValidateRequest(req)),
+        IOE.FromEither[error](ValidateInput(req)),
         IOE.Map[error](RenderCommand),
         IOE.Chain(func(spec CommandSpec) IOE.IOEither[error, struct{}] {
             return Execute(ctx, spec)
@@ -164,7 +164,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 ### Domain types
 
 ```go
-type Request struct {
+type Input struct {
     File string   // Dockerfile path, validated non-empty
     Tags []string // Tag list, validated non-empty, all items non-empty
 }
@@ -178,7 +178,7 @@ type CommandSpec struct {
 ### Validation style
 
 ```go
-func ValidateRequest(r Request) E.Either[error, Request] {
+func ValidateInput(r Input) E.Either[error, Input] {
     validations := []E.Either[error, bool]{
         F.Pipe2(r.File,
             E.FromPredicate(nonEmpty, func(string) error { return errors.New("...") }),
@@ -197,7 +197,7 @@ func repeated(flag string) func([]string) []string {
     return A.Chain(func(value string) []string { return []string{flag, value} })
 }
 
-func RenderCommand(r Request) CommandSpec {
+func RenderCommand(r Input) CommandSpec {
     return CommandSpec{
         Name: "container",
         Args: F.Pipe1(
@@ -238,8 +238,8 @@ func main() {
 ## Naming and Style Conventions
 
 - Package names are short/lowercase (`build`)
-- Exported domain types are nouns: `Request`, `CommandSpec`
-- Validation returns `E.Either[error, Request]` rather than `error` + mutation
+- Exported domain types are nouns: `Input`, `CommandSpec`
+- Validation returns `E.Either[error, Input]` rather than `error` + mutation
 - Effects are isolated in `Execute` returning `IOE.IOEither[error, struct{}]`
 - Process execution always uses direct argv construction with `exec.CommandContext`, never shell strings
 
@@ -248,7 +248,7 @@ func main() {
 ## Testing Conventions
 
 - Tests live alongside source in `internal/build/`
-- Pure functions (`ValidateRequest`, `RenderCommand`) are tested directly — no mocking needed
+- Pure functions (`ValidateInput`, `RenderCommand`) are tested directly — no mocking needed
 - Tests that need to verify the full pipeline without running a real `container` binary inject a replacement `Execute` function via `type Executor func(context.Context, CommandSpec) IOE.IOEither[error, struct{}]`
 - Prefer adding/changing unit tests in `internal/build/*_test.go` with any behavior changes
 - Verify with `gotestsum --format pkgname-and-test-fails --format-hide-empty-pkg -- ./...` after every modification
