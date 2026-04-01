@@ -1,20 +1,25 @@
 package build
 
-import "context"
+import (
+	"context"
+
+	IOE "github.com/IBM/fp-go/v2/ioeither"
+)
 
 const containerBinary = "container"
 
 // Input holds the build parameters throughout the pipeline.
-// It carries the CLI inputs, execution context, and resolved command spec.
+// DockerfileSource is a lazy IOEither that resolves to a DockerfileResource
+// when executed. It is set once in InputFromCommand and never branched on.
 type Input struct {
-	File string
-	Name string
-	Tags []string
-	Ctx  context.Context
-	CommandSpec
+	DockerfileSource IOE.IOEither[error, DockerfileResource]
+	Name             string
+	Tags             []string
+	Ctx              context.Context
 }
 
 // CommandSpec holds the resolved executable binary and argv slice.
+// Built inside Execute after the DockerfileResource is acquired.
 type CommandSpec struct {
 	Bin  string
 	Args []string
