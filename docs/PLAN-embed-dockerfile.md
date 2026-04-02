@@ -139,7 +139,7 @@ rather than using the pre-composed `WithTempFile`.
 
 ---
 
-### 5.2 `internal/build/embed.go` — Embed Directive
+### 5.2 `internal/containerbuild/embed.go` — Embed Directive
 
 ```go
 package build
@@ -152,11 +152,11 @@ var embeddedDockerfile string
 
 The `//go:embed` directive requires the target file to be in the same directory
 as the Go source file (or a subdirectory). Copy the project-root `Dockerfile`
-to `internal/build/Dockerfile`.
+to `internal/containerbuild/Dockerfile`.
 
 ---
 
-### 5.3 `internal/build/resource.go` — DockerfileResource & Resolvers
+### 5.3 `internal/containerbuild/resource.go` — DockerfileResource & Resolvers
 
 #### Key fp-go file API patterns used
 
@@ -319,7 +319,7 @@ IOE.Map[error](func(name string) DockerfileResource{…})
 
 ## 6. Modified Files
 
-### 6.1 `internal/build/input.go`
+### 6.1 `internal/containerbuild/input.go`
 
 **Before:**
 
@@ -386,7 +386,7 @@ type CommandSpec struct {
 
 ---
 
-### 6.2 `internal/build/validate.go`
+### 6.2 `internal/containerbuild/validate.go`
 
 **Before:**
 
@@ -449,7 +449,7 @@ func ValidateInput(r Input) E.Either[error, Input] {
 
 ---
 
-### 6.3 `internal/build/args.go`
+### 6.3 `internal/containerbuild/args.go`
 
 **Before:**
 
@@ -499,7 +499,7 @@ func RenderCommand(r Input, path string) CommandSpec {
 
 ---
 
-### 6.4 `internal/build/command.go`
+### 6.4 `internal/containerbuild/command.go`
 
 **Before:**
 
@@ -666,7 +666,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 
 ---
 
-### 6.5 `internal/build/exec.go`
+### 6.5 `internal/containerbuild/exec.go`
 
 **Before:**
 
@@ -776,10 +776,10 @@ func runProcess(ctx context.Context, spec CommandSpec) IOE.IOEither[error, struc
 
 ## 7. File Placement
 
-Copy the project-root `Dockerfile` into `internal/build/`:
+Copy the project-root `Dockerfile` into `internal/containerbuild/`:
 
 ```bash
-cp Dockerfile internal/build/Dockerfile
+cp Dockerfile internal/containerbuild/Dockerfile
 ```
 
 The `//go:embed` directive requires the file to be in the same package
@@ -816,7 +816,7 @@ ignoring the `--file` value entirely.
 
 ## 9. Test Files
 
-### 9.1 `internal/build/resource_test.go` (new)
+### 9.1 `internal/containerbuild/resource_test.go` (new)
 
 ```go
 package build
@@ -923,7 +923,7 @@ func TestEmbeddedResolver_ReleaseCleansUp(t *testing.T) {
 
 ---
 
-### 9.2 `internal/build/validate_test.go` (updated)
+### 9.2 `internal/containerbuild/validate_test.go` (updated)
 
 The `TestValidateInput_EmptyFile` test is removed — file path validation is now
 tested in `resource_test.go` via `TestFileResolver_EmptyPath`. The remaining
@@ -1017,7 +1017,7 @@ func TestValidateInput_MultipleTags(t *testing.T) {
 
 ---
 
-### 9.3 `internal/build/args_test.go` (updated)
+### 9.3 `internal/containerbuild/args_test.go` (updated)
 
 `RenderCommand(req)` becomes `RenderCommand(req, path)`. The return type
 changes from `Input` (with embedded `CommandSpec`) to `CommandSpec` directly.
@@ -1125,14 +1125,14 @@ earlier. Each step ends with `gotestsum` to catch regressions immediately.
 
 | Step | File(s) | Rationale |
 |---|---|---|
-| 1 | `internal/build/Dockerfile` (copy) | Required by `//go:embed` in step 2 |
-| 2 | `internal/build/embed.go` | Makes `embeddedDockerfile` available |
-| 3 | `internal/build/input.go` | New `Input` type — breaks compilation of everything else intentionally |
-| 4 | `internal/build/resource.go` + `resource_test.go` | `DockerfileResource`, resolvers — depends on new `Input` and `embed.go` |
-| 5 | `internal/build/validate.go` + `validate_test.go` | Remove file validation, update tests |
-| 6 | `internal/build/args.go` + `args_test.go` | New `RenderCommand` signature, update tests |
-| 7 | `internal/build/exec.go` | `ioeither.WithResource` bracket, `runProcess` split |
-| 8 | `internal/build/command.go` | `--embed` flag, `InputFromCommand`, `F.Pipe5` pipeline |
+| 1 | `internal/containerbuild/Dockerfile` (copy) | Required by `//go:embed` in step 2 |
+| 2 | `internal/containerbuild/embed.go` | Makes `embeddedDockerfile` available |
+| 3 | `internal/containerbuild/input.go` | New `Input` type — breaks compilation of everything else intentionally |
+| 4 | `internal/containerbuild/resource.go` + `resource_test.go` | `DockerfileResource`, resolvers — depends on new `Input` and `embed.go` |
+| 5 | `internal/containerbuild/validate.go` + `validate_test.go` | Remove file validation, update tests |
+| 6 | `internal/containerbuild/args.go` + `args_test.go` | New `RenderCommand` signature, update tests |
+| 7 | `internal/containerbuild/exec.go` | `ioeither.WithResource` bracket, `runProcess` split |
+| 8 | `internal/containerbuild/command.go` | `--embed` flag, `InputFromCommand`, `F.Pipe5` pipeline |
 
 After step 8, the full build should compile and all tests should pass:
 
@@ -1148,17 +1148,17 @@ golangci-lint run ./...
 
 | File | Action |
 |---|---|
-| `internal/build/Dockerfile` | **Create** — copy from project root |
-| `internal/build/embed.go` | **Create** — `//go:embed` directive |
-| `internal/build/resource.go` | **Create** — `DockerfileResource`, `FileResolver`, `EmbeddedResolver` |
-| `internal/build/resource_test.go` | **Create** — resolver lifecycle tests |
-| `internal/build/input.go` | **Modify** — replace `File` + `CommandSpec` with `DockerfileSource` |
-| `internal/build/validate.go` | **Modify** — tags-only validation |
-| `internal/build/validate_test.go` | **Modify** — remove file test, update `Input` construction |
-| `internal/build/args.go` | **Modify** — `RenderCommand(r Input, path string) CommandSpec` |
-| `internal/build/args_test.go` | **Modify** — update call signatures and assertions |
-| `internal/build/exec.go` | **Modify** — `ioeither.WithResource` bracket, split `runProcess` |
-| `internal/build/command.go` | **Modify** — `--embed` flag, map dispatch, `F.Pipe5` |
+| `internal/containerbuild/Dockerfile` | **Create** — copy from project root |
+| `internal/containerbuild/embed.go` | **Create** — `//go:embed` directive |
+| `internal/containerbuild/resource.go` | **Create** — `DockerfileResource`, `FileResolver`, `EmbeddedResolver` |
+| `internal/containerbuild/resource_test.go` | **Create** — resolver lifecycle tests |
+| `internal/containerbuild/input.go` | **Modify** — replace `File` + `CommandSpec` with `DockerfileSource` |
+| `internal/containerbuild/validate.go` | **Modify** — tags-only validation |
+| `internal/containerbuild/validate_test.go` | **Modify** — remove file test, update `Input` construction |
+| `internal/containerbuild/args.go` | **Modify** — `RenderCommand(r Input, path string) CommandSpec` |
+| `internal/containerbuild/args_test.go` | **Modify** — update call signatures and assertions |
+| `internal/containerbuild/exec.go` | **Modify** — `ioeither.WithResource` bracket, split `runProcess` |
+| `internal/containerbuild/command.go` | **Modify** — `--embed` flag, map dispatch, `F.Pipe5` |
 
 ---
 
@@ -1166,7 +1166,7 @@ golangci-lint run ./...
 
 - **`//go:embed` path**: The file must be in the package directory or below.
   `//go:embed ../../Dockerfile` does **not** work — the Dockerfile must be
-  physically placed at `internal/build/Dockerfile`.
+  physically placed at `internal/containerbuild/Dockerfile`.
 
 - **`IOEither` is lazy**: `DockerfileSource` is a `func() Either[error, DockerfileResource]`.
   It is NOT executed when `InputFromCommand` builds the `Input` — only when

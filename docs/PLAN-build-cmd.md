@@ -213,7 +213,7 @@ internal/
 Reasons:
 
 - `cmd/.../main.go` matches the inspected CLI references
-- `internal/build` isolates the single concrete subcommand
+- `internal/containerbuild` isolates the single concrete subcommand
 - `input.go` holds the domain type; `command.go` holds the CLI wiring and action pipeline
 - no `internal/fputil` or `internal/app` — the pipeline is flat enough to not need conversion helpers or a separate app package
 
@@ -238,7 +238,7 @@ import (
     "fmt"
     "os"
 
-    "github.com/cybersiddhu/crush-sandbox/internal/build"
+    "github.com/cybersiddhu/crush-sandbox/internal/containerbuild"
     "github.com/urfave/cli/v3"
 )
 
@@ -258,7 +258,7 @@ func main() {
 ```
 
 The entry point uses idiomatic Go error handling intentionally — fp-go
-combinators govern the *application* code inside `internal/build`, not the
+combinators govern the *application* code inside `internal/containerbuild`, not the
 process bootstrap. This matches every inspected reference (`goldenbraid-list/main.go`,
 `devops-engineer/cmd/agent/main.go`).
 
@@ -573,21 +573,21 @@ Grounding:
 
 ### 16.1 Unit tests to write
 
-`internal/build/args_test.go` must cover:
+`internal/containerbuild/args_test.go` must cover:
 
 - default input renders `container build --file Dockerfile --tag latest .`
 - repeated `--tag` values preserve order
 - Dockerfile override renders the supplied path
 - final argv item remains `.`
 
-`internal/build/validate_test.go` must cover:
+`internal/containerbuild/validate_test.go` must cover:
 
 - empty Dockerfile path returns `Left`
 - empty tag list returns `Left`
 - blank tag entry returns `Left`
 - default input returns `Right`
 
-`internal/build/action_test.go` must keep process execution injectable so tests can verify constructed `CommandSpec` without executing a real `container` binary.
+`internal/containerbuild/action_test.go` must keep process execution injectable so tests can verify constructed `CommandSpec` without executing a real `container` binary.
 
 ### 16.2 Testability
 
@@ -612,13 +612,13 @@ go test ./...
 
 1. Update `go.mod` with `urfave/cli/v3` and `fp-go/v2`
 2. Add `cmd/container-cli/main.go`
-3. Add `internal/build/input.go` (Input, CommandSpec types)
-4. Add `internal/build/validate.go`
-5. Add `internal/build/args.go`
-6. Add `internal/build/exec.go`
-7. Add `internal/build/command.go` (Command(), Action, InputFromCommand)
-8. Add `internal/build/validate_test.go`
-9. Add `internal/build/args_test.go`
+3. Add `internal/containerbuild/input.go` (Input, CommandSpec types)
+4. Add `internal/containerbuild/validate.go`
+5. Add `internal/containerbuild/args.go`
+6. Add `internal/containerbuild/exec.go`
+7. Add `internal/containerbuild/command.go` (Command(), Action, InputFromCommand)
+8. Add `internal/containerbuild/validate_test.go`
+9. Add `internal/containerbuild/args_test.go`
 10. Run `go test ./...`
 
 ## 18. Concrete Acceptance Criteria

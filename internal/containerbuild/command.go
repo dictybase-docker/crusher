@@ -1,6 +1,6 @@
 // Package build provides a CLI command to build an OCI image using the
 // container CLI .
-package build
+package containerbuild
 
 import (
 	"context"

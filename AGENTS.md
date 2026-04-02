@@ -47,9 +47,9 @@ go list -f '{{.ImportPath}} => {{.Dir}}' ./...
 ```
 cmd/
   container-cli/
-    main.go              # Entry point – root cli.Command, wires build.Command()
+    main.go              # Entry point – root cli.Command, wires containerbuild.Command()
 internal/
-  build/
+  containerbuild/
     input.go           # Input and CommandSpec domain types
     validate.go          # Pure Either-based validation
     args.go              # Pure argv rendering (Input → CommandSpec)
@@ -223,7 +223,7 @@ func main() {
         Name:  "container-cli",
         Usage: "Build OCI images through the container CLI",
         Commands: []*cli.Command{
-            build.Command(),
+            containerbuild.Command(),
         },
     }
     if err := app.Run(context.Background(), os.Args); err != nil {
@@ -237,7 +237,7 @@ func main() {
 
 ## Naming and Style Conventions
 
-- Package names are short/lowercase (`build`)
+- Package names are short/lowercase (`containerbuild`)
 - Exported domain types are nouns: `Input`, `CommandSpec`
 - Validation returns `E.Either[error, Input]` rather than `error` + mutation
 - Effects are isolated in `Execute` returning `IOE.IOEither[error, struct{}]`
@@ -247,10 +247,10 @@ func main() {
 
 ## Testing Conventions
 
-- Tests live alongside source in `internal/build/`
+- Tests live alongside source in `internal/containerbuild/`
 - Pure functions (`ValidateInput`, `RenderCommand`) are tested directly — no mocking needed
 - Tests that need to verify the full pipeline without running a real `container` binary inject a replacement `Execute` function via `type Executor func(context.Context, CommandSpec) IOE.IOEither[error, struct{}]`
-- Prefer adding/changing unit tests in `internal/build/*_test.go` with any behavior changes
+- Prefer adding/changing unit tests in `internal/containerbuild/*_test.go` with any behavior changes
 - Verify with `gotestsum --format pkgname-and-test-fails --format-hide-empty-pkg -- ./...` after every modification
 
 ### Required test coverage
@@ -310,11 +310,11 @@ The Docker sandbox image provides:
 
 ## Workflow for Agents
 
-1. Start from `cmd/container-cli/main.go` and `internal/build/*` to understand command flow.
+1. Start from `cmd/container-cli/main.go` and `internal/containerbuild/*` to understand command flow.
 2. Use `docs/command-reference.md` for `container build` flag/behavior truth.
 3. Use `docs/PLAN-build-cmd.md` as ground truth for architecture decisions.
-4. Preserve fp-go functional composition style in `internal/build`.
-5. Prefer adding/changing unit tests in `internal/build/*_test.go` with any behavior changes.
+4. Preserve fp-go functional composition style in `internal/containerbuild`.
+5. Prefer adding/changing unit tests in `internal/containerbuild/*_test.go` with any behavior changes.
 6. Verify with `gotestsum --format pkgname-and-test-fails --format-hide-empty-pkg -- ./...` after modifications.
 7. Run `golangci-lint run ./...` to check for lint violations.
 

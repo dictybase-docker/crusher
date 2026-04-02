@@ -1,6 +1,6 @@
 // Package build provides the logic to render the command line arguments for the
 // build command.
-package build
+package containerbuild
 
 import (
 	A "github.com/IBM/fp-go/v2/array"
