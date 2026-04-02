@@ -46,12 +46,10 @@ func Execute(r Input) IOE.IOEither[error, F.Void] {
 func runProcess(spec CommandSpec) IOE.IOEither[error, F.Void] {
 	return F.Pipe1(
 		IOE.TryCatchError(func() (F.Void, error) {
-			cmd := &exec.Cmd{
-				Path:   spec.Bin,
-				Args:   append([]string{spec.Bin}, spec.Args...),
-				Stdout: os.Stdout,
-				Stderr: os.Stderr,
-			}
+			//nolint:gosec // G204: binary is a const, args are validated
+			cmd := exec.Command(spec.Bin, spec.Args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			return F.VOID, cmd.Run()
 		}),
 		IOE.MapLeft[F.Void](func(err error) error {
