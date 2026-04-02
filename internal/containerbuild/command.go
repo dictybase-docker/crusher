@@ -45,7 +45,7 @@ func Command() *cli.Command {
 				Name:    "name",
 				Aliases: []string{"n"},
 				Usage:   "Image name (combines with tags as name:tag)",
-				Value:   "container",
+				Value:   "crusher",
 			},
 			&cli.BoolFlag{
 				Name:  "embed",
