@@ -75,10 +75,10 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
-		FP.ToEither[error, struct{}],
+		FP.ToEither[error, F.Void],
 		E.Fold(
 			F.Identity[error],
-			func(struct{}) error { return nil },
+			func(F.Void) error { return nil },
 		),
 	)
 }
