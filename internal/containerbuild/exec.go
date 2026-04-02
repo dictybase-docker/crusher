@@ -42,15 +42,21 @@ func Execute(r Input) IOE.IOEither[error, F.Void] {
 }
 
 // runProcess executes the container binary with the given CommandSpec.
-// Split from Execute to satisfy funlen limits.
 func runProcess(spec CommandSpec) IOE.IOEither[error, F.Void] {
-	return F.Pipe1(
-		IOE.TryCatchError(func() (F.Void, error) {
-			//nolint:gosec // G204: binary is a const, args are validated
-			cmd := exec.Command(spec.Bin, spec.Args...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			return F.VOID, cmd.Run()
+	return F.Pipe2(
+		IOE.TryCatchError(func() (string, error) {
+			return exec.LookPath(spec.Bin)
+		}),
+		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
+			return IOE.TryCatchError(func() (F.Void, error) {
+				cmd := &exec.Cmd{
+					Path:   bin,
+					Args:   append([]string{bin}, spec.Args...),
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				}
+				return F.VOID, cmd.Run()
+			})
 		}),
 		IOE.MapLeft[F.Void](func(err error) error {
 			return fmt.Errorf("container build failed: %w", err)
