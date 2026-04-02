@@ -1,5 +1,6 @@
-// Package build provides the logic to render the command line arguments for the
-// build command.
+// Package containerbuild provides the implementation of the ContainerBuild
+// command, which builds a container image from a Dockerfile and tags it with
+// the provided name and tags.
 package containerbuild
 
 import (
@@ -8,8 +9,11 @@ import (
 	S "github.com/IBM/fp-go/v2/string"
 )
 
+// nameTag is a Semigroup that concatenates the name and tag with a ":" in
+// between.
 var nameTag = S.IntersperseSemigroup(":")
 
+// renderTagArgs takes the tags from the Input and renders them into an array of
 func renderTagArgs(r Input) []string {
 	return F.Pipe1(
 		r.Tags,

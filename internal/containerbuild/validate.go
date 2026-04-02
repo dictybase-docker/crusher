@@ -18,6 +18,7 @@ var (
 		P.ContraMap(strings.TrimSpace),
 	)
 
+	// isNonBlank is the negation of isBlank.
 	isNonBlank = P.Not(isBlank)
 
 	// A tag list is valid when it has at least one item and none of them
@@ -28,6 +29,7 @@ var (
 	)
 )
 
+// ValidateInput checks that the tags in the Input are valid according to
 func ValidateInput(r Input) E.Either[error, Input] {
 	return F.Pipe2(
 		r.Tags,

@@ -18,6 +18,7 @@ type DockerfileResource struct {
 	Release IOE.IOEither[error, string]
 }
 
+// nopRelease is the release callback for file-based DockerfileResources, which
 var nopRelease = IOE.Of[error]("")
 
 // FileResolver validates that path is non-blank, then wraps it in a
