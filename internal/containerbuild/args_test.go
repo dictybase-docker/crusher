@@ -10,8 +10,9 @@ import (
 func TestRenderCommand_DefaultInput(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{},
 	}
 
 	spec := RenderCommand(req, "Dockerfile")
@@ -26,8 +27,9 @@ func TestRenderCommand_DefaultInput(t *testing.T) {
 func TestRenderCommand_RepeatedTags(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest", "stable", "v1.0.0"},
+		Name:      "myapp",
+		Tags:      []string{"latest", "stable", "v1.0.0"},
+		BuildArgs: map[string]string{},
 	}
 
 	spec := RenderCommand(req, "Dockerfile")
@@ -42,8 +44,9 @@ func TestRenderCommand_RepeatedTags(t *testing.T) {
 func TestRenderCommand_DockerfileOverride(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{},
 	}
 
 	spec := RenderCommand(req, "docker/Prod.Dockerfile")
@@ -58,8 +61,9 @@ func TestRenderCommand_DockerfileOverride(t *testing.T) {
 func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{},
 	}
 
 	spec := RenderCommand(req, "Dockerfile")
@@ -73,8 +77,9 @@ func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 func TestRenderCommand_ArgsOrder(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest", "stable"},
+		Name:      "myapp",
+		Tags:      []string{"latest", "stable"},
+		BuildArgs: map[string]string{},
 	}
 
 	spec := RenderCommand(req, "Dockerfile")
@@ -88,4 +93,86 @@ func TestRenderCommand_ArgsOrder(t *testing.T) {
 	require.Equal("myapp:latest", spec.Args[4])
 	require.Equal("--tag", spec.Args[5])
 	require.Equal("myapp:stable", spec.Args[6])
+}
+
+func TestRenderCommand_BuildArgs(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name: "myapp",
+		Tags: []string{"latest"},
+		BuildArgs: map[string]string{
+			"GOLANGCI_LINT_VERSION": "2.12.0",
+			"CRUSH_VERSION":         "v1.0.0",
+		},
+	}
+
+	spec := RenderCommand(req, "Dockerfile")
+
+	require.Contains(spec.Args, "--build-arg")
+	require.Contains(spec.Args, "GOLANGCI_LINT_VERSION=2.12.0")
+	require.Contains(spec.Args, "CRUSH_VERSION=v1.0.0")
+}
+
+func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name: "myapp",
+		Tags: []string{"latest"},
+		BuildArgs: map[string]string{
+			"GOLANGCI_LINT_VERSION": "2.11.4",
+			"CRUSH_VERSION":         "latest",
+			"GOTESTSUM_VERSION":     "latest",
+		},
+	}
+
+	spec := RenderCommand(req, "Dockerfile")
+
+	var buildArgValues []string
+	for i, arg := range spec.Args {
+		if arg == "--build-arg" && i+1 < len(spec.Args) {
+			buildArgValues = append(buildArgValues, spec.Args[i+1])
+		}
+	}
+
+	require.Len(buildArgValues, 3)
+	require.Equal("CRUSH_VERSION=latest", buildArgValues[0])
+	require.Equal("GOLANGCI_LINT_VERSION=2.11.4", buildArgValues[1])
+	require.Equal("GOTESTSUM_VERSION=latest", buildArgValues[2])
+}
+
+func TestRenderCommand_BuildArgs_Position(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name: "myapp",
+		Tags: []string{"latest"},
+		BuildArgs: map[string]string{
+			"GOLANGCI_LINT_VERSION": "2.11.4",
+		},
+	}
+
+	spec := RenderCommand(req, "Dockerfile")
+
+	require.Equal(".", spec.Args[len(spec.Args)-1])
+
+	buildArgIdx := -1
+	for i, arg := range spec.Args {
+		if arg == "GOLANGCI_LINT_VERSION=2.11.4" {
+			buildArgIdx = i
+			break
+		}
+	}
+	require.Less(buildArgIdx, len(spec.Args)-1)
+}
+
+func TestRenderCommand_EmptyBuildArgs(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{},
+	}
+
+	spec := RenderCommand(req, "Dockerfile")
+
+	require.NotContains(spec.Args, "--build-arg")
 }
