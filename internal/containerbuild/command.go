@@ -51,6 +51,21 @@ func Command() *cli.Command {
 				Name:  "embed",
 				Usage: "Use the Dockerfile embedded in the binary (ignores --file)",
 			},
+			&cli.StringFlag{
+				Name:  "golangci-lint-version",
+				Usage: "golangci-lint version",
+				Value: "2.11.4",
+			},
+			&cli.StringFlag{
+				Name:  "crush-version",
+				Usage: "crush version",
+				Value: "latest",
+			},
+			&cli.StringFlag{
+				Name:  "gotestsum-version",
+				Usage: "gotestsum version",
+				Value: "latest",
+			},
 		},
 		Action: Action,
 	}
@@ -63,7 +78,12 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		DockerfileSource: resolverFactories[cmd.Bool("embed")](cmd),
 		Name:             cmd.String("name"),
 		Tags:             cmd.StringSlice("tag"),
-		Ctx:              ctx,
+		BuildArgs: map[string]string{
+			"GOLANGCI_LINT_VERSION": cmd.String("golangci-lint-version"),
+			"CRUSH_VERSION":         cmd.String("crush-version"),
+			"GOTESTSUM_VERSION":     cmd.String("gotestsum-version"),
+		},
+		Ctx: ctx,
 	}
 }
 

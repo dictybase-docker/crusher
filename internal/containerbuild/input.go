@@ -15,6 +15,7 @@ type Input struct {
 	DockerfileSource IOE.IOEither[error, DockerfileResource]
 	Name             string
 	Tags             []string
+	BuildArgs        map[string]string
 	Ctx              context.Context
 }
 
