@@ -8,6 +8,8 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	P "github.com/IBM/fp-go/v2/pair"
+	R "github.com/IBM/fp-go/v2/record"
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 	"github.com/urfave/cli/v3"
 )
@@ -22,6 +24,15 @@ var resolverFactories = map[bool]func(*cli.Command) IOE.IOEither[error, Dockerfi
 	true: func(_ *cli.Command) IOE.IOEither[error, DockerfileResource] {
 		return EmbeddedResolver()
 	},
+}
+
+// buildArgEntries reads the versions from the CLI and constructs a record
+func buildArgEntries(cmd *cli.Command) R.Entries[string, string] {
+	return R.Entries[string, string]{
+		P.MakePair("GOLANGCI_LINT_VERSION", cmd.String("golangci-lint-version")),
+		P.MakePair("CRUSH_VERSION", cmd.String("crush-version")),
+		P.MakePair("GOTESTSUM_VERSION", cmd.String("gotestsum-version")),
+	}
 }
 
 func Command() *cli.Command {
@@ -78,12 +89,8 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		DockerfileSource: resolverFactories[cmd.Bool("embed")](cmd),
 		Name:             cmd.String("name"),
 		Tags:             cmd.StringSlice("tag"),
-		BuildArgs: map[string]string{
-			"GOLANGCI_LINT_VERSION": cmd.String("golangci-lint-version"),
-			"CRUSH_VERSION":         cmd.String("crush-version"),
-			"GOTESTSUM_VERSION":     cmd.String("gotestsum-version"),
-		},
-		Ctx: ctx,
+		BuildArgs:        F.Pipe2(cmd, buildArgEntries, R.FromEntries),
+		Ctx:              ctx,
 	}
 }
 
