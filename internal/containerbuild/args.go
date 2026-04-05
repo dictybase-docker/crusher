@@ -24,7 +24,14 @@ func renderBuildArgs(buildArgs map[string]string) []string {
 		R.Keys(buildArgs),
 		A.Sort(S.Ord),
 		A.Chain(func(key string) []string {
-			return []string{"--build-arg", fmt.Sprintf("%s=%s", key, buildArgs[key])}
+			return []string{
+				"--build-arg",
+				fmt.Sprintf(
+					"%s=%s",
+					key,
+					buildArgs[key],
+				),
+			}
 		}),
 	)
 }

@@ -11,7 +11,8 @@ import (
 func TestValidateInput_EmptyTagList(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Tags: []string{},
+		Tags:      []string{},
+		BuildArgs: map[string]string{},
 	}
 
 	result := ValidateInput(req)
@@ -29,7 +30,8 @@ func TestValidateInput_EmptyTagList(t *testing.T) {
 func TestValidateInput_BlankTagEntry(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Tags: []string{"latest", ""},
+		Tags:      []string{"latest", ""},
+		BuildArgs: map[string]string{},
 	}
 
 	result := ValidateInput(req)
@@ -47,8 +49,9 @@ func TestValidateInput_BlankTagEntry(t *testing.T) {
 func TestValidateInput_DefaultInput(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{},
 	}
 
 	result := ValidateInput(req)
@@ -66,8 +69,9 @@ func TestValidateInput_DefaultInput(t *testing.T) {
 func TestValidateInput_MultipleTags(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest", "stable", "v1.0.0"},
+		Name:      "myapp",
+		Tags:      []string{"latest", "stable", "v1.0.0"},
+		BuildArgs: map[string]string{},
 	}
 
 	result := ValidateInput(req)
@@ -80,4 +84,28 @@ func TestValidateInput_MultipleTags(t *testing.T) {
 	)
 	require.Equal("myapp", validated.Name)
 	require.Equal([]string{"latest", "stable", "v1.0.0"}, validated.Tags)
+}
+
+func TestValidateInput_BuildArgsNotValidated(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: map[string]string{"GOLANGCI_LINT_VERSION": "invalid-version"},
+	}
+
+	result := ValidateInput(req)
+	require.True(E.IsRight(result))
+}
+
+func TestValidateInput_NilBuildArgs(t *testing.T) {
+	require := require.New(t)
+	req := Input{
+		Name:      "myapp",
+		Tags:      []string{"latest"},
+		BuildArgs: nil,
+	}
+
+	result := ValidateInput(req)
+	require.True(E.IsRight(result))
 }

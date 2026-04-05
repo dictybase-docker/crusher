@@ -1,5 +1,5 @@
-// Package build provides a CLI command to build an OCI image using the
-// container CLI .
+// Package containerbuild implements the "build" subcommand, which builds an OCI
+// image using the container CLI.
 package containerbuild
 
 import (
