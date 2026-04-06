@@ -19,8 +19,9 @@ import (
 // from the Record by embed flag.
 var lookupResolver = F.Curry2(
 	func(embed bool, record map[bool]IOE.IOEither[error, DockerfileResource]) IOE.IOEither[error, DockerfileResource] {
-		return F.Pipe1(
-			R.MonadLookup(record, embed),
+		return F.Pipe2(
+			record,
+			R.Lookup[IOE.IOEither[error, DockerfileResource]](embed),
 			O.GetOrElse(func() IOE.IOEither[error, DockerfileResource] {
 				return EmbeddedResolver()
 			}),
