@@ -8,22 +8,33 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	O "github.com/IBM/fp-go/v2/option"
 	P "github.com/IBM/fp-go/v2/pair"
 	R "github.com/IBM/fp-go/v2/record"
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 	"github.com/urfave/cli/v3"
 )
 
-// resolverFactories is a map-based dispatch table that selects the Dockerfile
-// resolver strategy based on the --embed flag. This is the ONLY location
-// where the boolean is observed — no if/else anywhere in application code.
-var resolverFactories = map[bool]func(*cli.Command) IOE.IOEither[error, DockerfileResource]{
-	false: func(cmd *cli.Command) IOE.IOEither[error, DockerfileResource] {
-		return FileResolver(cmd.String("file"))
+// lookupResolver is a curried function that selects the Dockerfile resolver
+// from the Record by embed flag.
+var lookupResolver = F.Curry2(
+	func(embed bool, record map[bool]IOE.IOEither[error, DockerfileResource]) IOE.IOEither[error, DockerfileResource] {
+		return F.Pipe1(
+			R.MonadLookup(record, embed),
+			O.GetOrElse(func() IOE.IOEither[error, DockerfileResource] {
+				return EmbeddedResolver()
+			}),
+		)
 	},
-	true: func(_ *cli.Command) IOE.IOEither[error, DockerfileResource] {
-		return EmbeddedResolver()
-	},
+)
+
+// resolverEntries builds a Record of the two Dockerfile resolver strategies
+// keyed by the --embed flag.
+func resolverEntries(cmd *cli.Command) R.Entries[bool, IOE.IOEither[error, DockerfileResource]] {
+	return R.Entries[bool, IOE.IOEither[error, DockerfileResource]]{
+		P.MakePair(false, FileResolver(cmd.String("file"))),
+		P.MakePair(true, EmbeddedResolver()),
+	}
 }
 
 // buildArgEntries reads the versions from the CLI and constructs a record
@@ -32,6 +43,23 @@ func buildArgEntries(cmd *cli.Command) R.Entries[string, string] {
 		P.MakePair("GOLANGCI_LINT_VERSION", cmd.String("golangci-lint-version")),
 		P.MakePair("CRUSH_VERSION", cmd.String("crush-version")),
 		P.MakePair("GOTESTSUM_VERSION", cmd.String("gotestsum-version")),
+	}
+}
+
+// InputFromCommand reads CLI flags and constructs the build Input
+// using Record-based dispatch for both Dockerfile source and build args.
+func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
+	return Input{
+		Ctx:       ctx,
+		Name:      cmd.String("name"),
+		Tags:      cmd.StringSlice("tag"),
+		BuildArgs: F.Pipe2(cmd, buildArgEntries, R.FromEntries),
+		DockerfileSource: F.Pipe3(
+			cmd,
+			resolverEntries,
+			R.FromEntries,
+			lookupResolver(cmd.Bool("embed")),
+		),
 	}
 }
 
@@ -79,18 +107,6 @@ func Command() *cli.Command {
 			},
 		},
 		Action: Action,
-	}
-}
-
-// InputFromCommand reads CLI flags and selects the Dockerfile resolver
-// via the map-based dispatch table.
-func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
-	return Input{
-		DockerfileSource: resolverFactories[cmd.Bool("embed")](cmd),
-		Name:             cmd.String("name"),
-		Tags:             cmd.StringSlice("tag"),
-		BuildArgs:        F.Pipe2(cmd, buildArgEntries, R.FromEntries),
-		Ctx:              ctx,
 	}
 }
 
