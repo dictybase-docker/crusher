@@ -106,21 +106,13 @@ var isValidVolumeBasename = F.Pipe1(
 // ValidateInput validates the Input and resolves all paths to absolute form.
 // Returns Either[error, ResolvedInput].
 func ValidateInput(input Input) E.Either[error, ResolvedInput] {
-	return F.Pipe3(
-		E.Of[error](input),
-		E.Chain(resolvePaths),
-		E.Chain(validateVolumes),
-		E.Map[error](buildResolvedInput),
-	)
-}
-
-// resolvePaths resolves all paths to absolute form and validates container name.
-func resolvePaths(input Input) E.Either[error, Input] {
-	return F.Pipe3(
+	return F.Pipe5(
 		E.Of[error](input),
 		E.Chain(resolveConfigPath),
 		E.Chain(resolveDataPath),
 		E.Chain(resolveWorkspaceAndName),
+		E.Chain(validateVolumes),
+		E.Map[error](buildResolvedInput),
 	)
 }
 
