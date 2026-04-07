@@ -32,12 +32,12 @@ type MountSpec struct {
 
 // Input holds all parameters for container creation.
 type Input struct {
-	ImageName     string            // Image name (e.g., "crusher:latest")
-	ContainerName string            // Container name (empty = auto-generate)
-	ConfigPath    string            // Host path to Crush config directory (required)
-	DataPath      string            // Host path to Crush data directory (required)
-	WorkspacePath string            // Host path to workspace (optional)
-	Volumes       []string          // Additional host paths to mount (read-only)
+	ImageName     string   // Image name (e.g., "crusher:latest")
+	ContainerName string   // Container name (empty = auto-generate)
+	ConfigPath    string   // Host path to Crush config directory (required)
+	DataPath      string   // Host path to Crush data directory (required)
+	WorkspacePath string   // Host path to workspace (optional)
+	Volumes       []string // Additional host paths to mount (read-only)
 	Ctx           context.Context
 }
 
