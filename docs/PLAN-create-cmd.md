@@ -5,6 +5,8 @@
 
 This document provides an exhaustive implementation plan for a new `create` subcommand in `container-cli` that creates a container from an image built by the `build` subcommand. The container is pre-configured to run the Crush AI coding assistant with proper volume mounts for configuration, data, and workspace access.
 
+> Review status: this plan has been updated with a correctness review. The original intent is preserved, but several sections now include explicit design decisions, rationale, and corrected reference snippets where the first draft was ambiguous or not compile-ready.
+
 ---
 
 ## 2. Objectives
@@ -49,7 +51,7 @@ container-cli create [options] --config <path> --data <path>
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--image`, `-i` | string | `crusher:latest` | Image name (should match build subcommand output) |
-| `--workspace`, `-w` | string | `.` (current directory) | Host workspace folder. Mounted read-write to `${HOME}/workspace`. Also set as working directory |
+| `--workspace`, `-w` | string | _not mounted_ | Optional host workspace folder. When provided, mount read-write to `${HOME}/workspace` and set it as the working directory |
 | `--volume`, `-v` | stringSlice | `[]` | Additional host folders to mount read-only. Mounted to `${HOME}/<basename>` |
 | `--name`, `-n` | string | auto-generated | Container name. If not provided, generates a random alphabetical name |
 
@@ -68,7 +70,7 @@ Output:
 Container created: mystifying-hoover
 
 To start with an interactive shell:
-  container start -it mystifying-hoover
+  container start -ai mystifying-hoover
 ```
 
 #### With workspace mount
@@ -100,6 +102,44 @@ container-cli create \
   --image my-crusher:v2.0.0 \
   --name my-crush-sandbox
 ```
+
+### 3.5 Review-Driven Design Decisions
+
+The original draft had two important ambiguities that affected both UX and implementation quality.
+
+1. **Workspace should be truly optional**. The first draft documented `--workspace` as optional but also assigned it a default of `.`. That made the current directory mount happen even in the “minimal” invocation, which contradicts the stated CLI contract.
+2. **Validation should live in the application layer**. Because this subcommand is intentionally modeled after the pure validation pipeline used elsewhere in the project, the plan now treats `--config` and `--data` as semantically required but validated in `ValidateInput`, not short-circuited by `urfave/cli`.
+
+Reviewed command-shape example:
+
+```go
+func Command() *cli.Command {
+	return &cli.Command{
+		Name:  "create",
+		Usage: "Create a container for running Crush with pre-configured mounts",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "config",
+				Aliases: []string{"c"},
+				Usage:   "Host folder containing crush.json configuration",
+			},
+			&cli.StringFlag{
+				Name:    "data",
+				Aliases: []string{"d"},
+				Usage:   "Host folder for Crush persistent data",
+			},
+			&cli.StringFlag{
+				Name:    "workspace",
+				Aliases: []string{"w"},
+				Usage:   "Optional host workspace folder to mount",
+			},
+		},
+		Action: Action,
+	}
+}
+```
+
+That choice keeps CLI parsing simple and makes the documented validation errors testable through the fp-go pipeline.
 
 ---
 
@@ -270,21 +310,30 @@ The validation phase is pure and returns an `Either[error, ResolvedInput]`. **Al
 
 1. **Config path validation**
    - Must be non-blank
-   - Must be an absolute path (resolve if relative)
+   - Must resolve to an absolute path
+   - Must exist on disk
+   - Must be a directory
 
 2. **Data path validation**
    - Must be non-blank
-   - Must be an absolute path (resolve if relative)
+   - Must resolve to an absolute path
+   - Must exist on disk
+   - Must be a directory
 
 3. **Workspace path validation** (if provided)
    - Must be non-blank (if provided)
-   - Must be an absolute path (resolve if relative)
+   - Must resolve to an absolute path
+   - Must exist on disk
+   - Must be a directory
 
 4. **Volume paths validation**
    - Each path must be non-blank
-   - Each path must be an absolute path
-   - Basename must not be "config" or "data"
+   - Each path must resolve to an absolute path
+   - Each path must exist on disk
+   - Each path must be a directory
+   - Basename must not collide with reserved targets such as `config`, `data`, `crush`, or `workspace`
    - Basename must contain at least one letter or number
+   - Duplicate target basenames must be rejected to prevent ambiguous mount layouts
 
 5. **Image name validation**
    - Must be non-blank (use default if not provided)
@@ -292,6 +341,10 @@ The validation phase is pure and returns an `Either[error, ResolvedInput]`. **Al
 6. **Container name validation** (if provided)
    - Must match container naming conventions (alphanumeric, dash, underscore)
    - If not provided, will be auto-generated
+
+#### Review Thought Process
+
+The main review question here was whether path problems should surface from `container create` or from `container-cli create`. The better developer experience is to fail fast in validation with domain-specific errors, because the user already supplied host paths to this command and the application has enough information to reject bad inputs before spawning the external process.
 
 ### 6.3 Mount Rendering Logic
 
@@ -316,9 +369,13 @@ Mounts are rendered in this order:
 3. Workspace mount (read-write, if provided)
 4. Additional volume mounts (**read-only**, sorted alphabetically by target path)
 
+Review note: only the additional volume mounts should be sorted. Core mounts must remain in fixed order so that the rendered command matches the documented contract and test expectations.
+
 ---
 
 ## 7. Complete Implementation Code
+
+> Review note: the code blocks in this section capture the original end-to-end proposal, but several snippets were found to be incomplete or not compile-ready during review. Section 14 contains corrected reference snippets and explains why those changes are needed.
 
 ### 7.1 `internal/containercreate/input.go`
 
@@ -1603,7 +1660,9 @@ func TestRenderEnvVars(t *testing.T) {
 
 ## 8. Integration with Main CLI
 
-### 8.1 Update `cmd/container-cli/main.go`
+### 8.1 Current status of `cmd/container-cli/main.go`
+
+Review note: this integration step is already complete in the current repository state. The snippet below is still useful as a reference for the desired wiring, but it should not be treated as future work.
 
 ```go
 package main
@@ -1806,32 +1865,190 @@ The implementation is fully specified with all types, functions, and tests docum
 
 ---
 
-## 14. Review Recommendations
+## 14. Review Notes, Thought Process, and Corrected Reference Snippets
 
-### 14.1 Correctness Updates
+### 14.1 What Changed After Review
 
-1. Decide whether `--workspace` is truly optional. If yes, remove the default `.` and update examples accordingly. If no, reclassify it as a defaulted mount rather than an optional feature.
-2. Replace `container start -it <name>` with `container start -ai <name>` or equivalent wording that matches `docs/command-reference.md`.
-3. Align validation strategy: either rely on `urfave/cli` required-flag errors or remove `Required: true` and keep custom validation errors, but do not document both as primary behavior.
-4. Update the “Integration with Main CLI” section to note that `cmd/container-cli/main.go` already registers `containercreate.Command()`.
+The review focused on three questions:
 
-### 14.2 Implementation Fixes Needed
+1. **Does the documented CLI behavior match the user-facing contract?**
+2. **Do the code examples actually support the functional style claimed by the plan?**
+3. **Will failures happen in the right layer with actionable error messages?**
 
-1. Mark the code samples as illustrative or revise them until they compile cleanly.
-2. Fix missing imports and alias mismatches in the validation and name generation snippets.
-3. Replace invalid expressions such as `E.Map(EqString.Equals)` and `E.Of[error](filepath.Abs(path))` with compile-valid fp-go code.
-4. Fix the `F.PipeN` usages whose arity does not match the number of transforms.
-5. Remove the literal `if` from `renderMount` if the document is enforcing a strict “no imperative branching” rule.
+That review led to these plan-level decisions:
 
-### 14.3 Validation and Mounting Gaps
+- `--workspace` remains optional and therefore should not default to `.`.
+- Start instructions should use `container start -ai <name>` to match the local command reference.
+- Required user inputs should be validated inside the fp-go pipeline so the plan's error messages stay meaningful and testable.
+- Mount ordering must preserve core mounts first and only sort the extra mounts.
+- Host-path validation should fail fast before shelling out to `container create`.
 
-1. Add existence and directory checks for config, data, workspace, and extra volume paths.
-2. Reserve or otherwise prevent mount-target collisions for `workspace` and duplicate basenames across `--volume` entries.
-3. Ensure the implementation preserves the documented mount order: core mounts first, additional mounts sorted only within their own group.
-4. Clarify whether the current plan wants fail-fast validation for host-path problems or is intentionally delegating them to `container create`.
+### 14.2 Why the Original Draft Needed Changes
 
-### 14.4 Verification Notes
+#### Workspace optionality
+
+The original text said `--workspace` was optional while the flag definition assigned `Value: "."`. Those two statements cannot both be true.
+
+If the flag defaults to `.`, then this invocation:
+
+```bash
+container-cli create --config ~/.config/crush --data ~/.local/share/crush
+```
+
+silently mounts the current directory read-write. That is a surprising side effect for a supposedly minimal invocation.
+
+The reviewed version prefers explicitness:
+
+```go
+&cli.StringFlag{
+	Name:    "workspace",
+	Aliases: []string{"w"},
+	Usage:   "Optional host workspace folder to mount",
+}
+```
+
+This makes the workspace mount an opt-in behavior, which better matches the objective of safe defaults.
+
+#### Validation ownership
+
+The draft mixed two incompatible strategies:
+
+- `urfave/cli` `Required: true`
+- custom `ValidateInput` errors like `config path is required`
+
+If `Required: true` is kept, `ValidateInput` never becomes the authoritative source for those missing-flag errors. Because the rest of the plan is built around a pure validation pipeline, the cleaner design is to keep validation in application code.
+
+Reviewed direction:
+
+```go
+func validateRequiredPaths(input Input) E.Either[error, Input] {
+	return F.Pipe2(
+		[]E.Either[error, string]{
+			E.FromPredicate(
+				isNonBlank,
+				func(string) error { return errors.New("config path is required") },
+			)(input.ConfigPath),
+			E.FromPredicate(
+				isNonBlank,
+				func(string) error { return errors.New("data path is required") },
+			)(input.DataPath),
+		},
+		E.SequenceArray[error, string],
+		E.Map(func([]string) Input { return input }),
+	)
+}
+```
+
+The justification is straightforward: one validation pipeline, one place to test, one set of documented errors.
+
+### 14.3 Compile-Safe Reference Fixes
+
+Several draft snippets were illustrative but not compile-ready. The biggest problems were missing imports, invalid `fp-go` call shapes, and `Pipe` arity mismatches.
+
+#### Corrected path resolution example
+
+The original draft used `E.Of[error](filepath.Abs(path))`, but `filepath.Abs` returns `(string, error)`. A compile-safe version is:
+
+```go
+func resolveAbsolutePath(path string) E.Either[error, string] {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return E.Left[string](err)
+	}
+	return E.Of[error](absPath)
+}
+```
+
+If the plan wants to stay stricter about avoiding imperative branching inside pure helpers, this can be wrapped with `Option` or another small adapter, but the key review point is that the original snippet was not valid Go.
+
+#### Corrected mount rendering example
+
+The original `renderMount` snippet used nested `Pipe1` chains with a literal `if` buried inside an inline function. A simpler reviewed version is easier to reason about and aligns better with the documented behavior:
+
+```go
+func renderMount(mount MountSpec) string {
+	base := fmt.Sprintf(
+		"type=bind,source=%s,target=%s",
+		mount.HostPath,
+		mount.TargetPath,
+	)
+
+	return F.Pipe1(
+		O.FromPredicate(func(ro bool) bool { return ro })(mount.Readonly),
+		O.Map(func(bool) string { return base + ",readonly" }),
+		O.GetOrElse(func() string { return base }),
+	)
+}
+```
+
+The justification here is not just style. It also removes the hard-to-follow nested lambdas and makes the readonly suffix behavior obvious.
+
+#### Corrected mount ordering example
+
+The original `buildMounts` / `sortAdditionalMounts` combination sorted the entire slice, which could move additional mounts ahead of config or data. The reviewed version sorts only extras:
+
+```go
+func buildMounts(input Input) []MountSpec {
+	additional := F.Pipe1(
+		buildVolumeMounts(input.Volumes),
+		A.Sort(OrdMountSpecByTarget),
+	)
+
+	return A.ArrayConcatAll(
+		buildCoreMounts(input),
+		buildWorkspaceMount(input.WorkspacePath),
+		additional,
+	)
+}
+```
+
+This directly matches the prose in Section 6.3 and prevents ordering drift in tests.
+
+### 14.4 Validation Gaps Identified During Review
+
+The review found that absolute-path normalization alone is not enough. The plan should explicitly validate:
+
+- path existence
+- directory-ness
+- reserved mount targets
+- duplicate extra mount basenames
+- collisions with `workspace`
+
+Illustrative reviewed helper:
+
+```go
+func validateVolumeTargets(volumes []string) E.Either[error, []string] {
+	targets := F.Pipe1(
+		volumes,
+		A.Map(filepath.Base),
+	)
+
+	if len(targets) != len(A.Uniq(Str.Eq)(targets)) {
+		return E.Left[[]string](errors.New("volume mount targets must be unique"))
+	}
+
+	return E.Of[error](volumes)
+}
+```
+
+Even if the final implementation uses a different fp-go helper set, the plan should preserve this rule because it prevents nondeterministic container layouts.
+
+### 14.5 Recommended Test Additions
+
+The current test list is good, but review suggests adding explicit coverage for the corrected design decisions:
+
+```go
+func TestValidateInput_WithoutWorkspace_DoesNotSetWorkdir(t *testing.T) {}
+func TestValidateInput_RejectsDuplicateVolumeBasenames(t *testing.T) {}
+func TestValidateInput_RejectsWorkspaceBasenameCollision(t *testing.T) {}
+func TestBuildMounts_PreservesCoreMountOrder(t *testing.T) {}
+```
+
+These tests justify the review changes by protecting the exact behaviors that were ambiguous in the original draft.
+
+### 14.6 Verification Notes
 
 - `go build ./cmd/container-cli/...` currently passes in the repo.
 - `gotestsum --format pkgname-and-test-fails --format-hide-empty-pkg -- ./internal/containercreate/...` currently passes in the repo.
 - `cmd/container-cli/main.go` already includes `containercreate.Command()`.
+- `docs/command-reference.md` documents `container start [--attach] [--interactive] ...`, which is why this plan now recommends `-ai` rather than `-it`.
