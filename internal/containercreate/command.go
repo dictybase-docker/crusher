@@ -41,19 +41,21 @@ func Command() *cli.Command {
 				Value:   DefaultImageName,
 			},
 			&cli.StringFlag{
-				Name:    "config",
-				Aliases: []string{"c"},
-				Usage:   "Host path to Crush config directory (required)",
+				Name:     "config",
+				Aliases:  []string{"c"},
+				Usage:    "Host path to Crush config directory",
+				Required: true,
 			},
 			&cli.StringFlag{
-				Name:    "data",
-				Aliases: []string{"d"},
-				Usage:   "Host path to Crush data directory (required)",
+				Name:     "data",
+				Aliases:  []string{"d"},
+				Usage:    "Host path to Crush data directory ",
+				Required: true,
 			},
 			&cli.StringFlag{
 				Name:    "workspace",
 				Aliases: []string{"w"},
-				Usage:   "Host path to workspace directory (optional)",
+				Usage:   "Host path to workspace directory, current directory by default",
 			},
 			&cli.StringSliceFlag{
 				Name:    "volume",
