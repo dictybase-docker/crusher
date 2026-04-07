@@ -44,6 +44,7 @@ func buildArgEntries(cmd *cli.Command) R.Entries[string, string] {
 		P.MakePair("GOLANGCI_LINT_VERSION", cmd.String("golangci-lint-version")),
 		P.MakePair("CRUSH_VERSION", cmd.String("crush-version")),
 		P.MakePair("GOTESTSUM_VERSION", cmd.String("gotestsum-version")),
+		P.MakePair("MOXIDE_VERSION", cmd.String("moxide-version")),
 	}
 }
 
@@ -104,6 +105,11 @@ func Command() *cli.Command {
 			&cli.StringFlag{
 				Name:  "gotestsum-version",
 				Usage: "gotestsum version",
+				Value: "latest",
+			},
+			&cli.StringFlag{
+				Name:  "moxide-version",
+				Usage: "markdown-oxide version",
 				Value: "latest",
 			},
 		},
