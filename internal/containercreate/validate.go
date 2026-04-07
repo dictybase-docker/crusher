@@ -106,32 +106,11 @@ var isValidVolumeBasename = F.Pipe1(
 // ValidateInput validates the Input and resolves all paths to absolute form.
 // Returns Either[error, ResolvedInput].
 func ValidateInput(input Input) E.Either[error, ResolvedInput] {
-	return F.Pipe4(
+	return F.Pipe3(
 		E.Of[error](input),
-		E.Chain(validateRequiredPaths),
 		E.Chain(resolvePaths),
 		E.Chain(validateVolumes),
 		E.Map[error](buildResolvedInput),
-	)
-}
-
-// validateRequiredPaths checks that required paths are non-blank.
-func validateRequiredPaths(input Input) E.Either[error, Input] {
-	configResult := E.FromPredicate(
-		isNonBlank,
-		func(string) error { return errors.New("config path is required") },
-	)(input.ConfigPath)
-
-	dataResult := E.FromPredicate(
-		isNonBlank,
-		func(string) error { return errors.New("data path is required") },
-	)(input.DataPath)
-
-	return F.Pipe3(
-		[]E.Either[error, string]{configResult, dataResult},
-		E.SequenceArray[error, string],
-		E.Map[error](func([]string) Input { return input }),
-		F.Identity[E.Either[error, Input]],
 	)
 }
 

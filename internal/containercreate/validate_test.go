@@ -8,44 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateInput_MissingConfigPath(t *testing.T) {
-	require := require.New(t)
-	input := Input{
-		ConfigPath: "",
-		DataPath:   "/tmp/data",
-	}
-
-	result := ValidateInput(input)
-
-	require.True(E.IsLeft(result), "expected Left for missing config path")
-
-	err := F.Pipe1(
-		result,
-		E.Fold(F.Identity[error], func(ResolvedInput) error { return nil }),
-	)
-	require.NotNil(err)
-	require.EqualError(err, "config path is required")
-}
-
-func TestValidateInput_MissingDataPath(t *testing.T) {
-	require := require.New(t)
-	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "",
-	}
-
-	result := ValidateInput(input)
-
-	require.True(E.IsLeft(result), "expected Left for missing data path")
-
-	err := F.Pipe1(
-		result,
-		E.Fold(F.Identity[error], func(ResolvedInput) error { return nil }),
-	)
-	require.NotNil(err)
-	require.EqualError(err, "data path is required")
-}
-
 func TestValidateInput_ValidMinimalInput(t *testing.T) {
 	require := require.New(t)
 	input := Input{
