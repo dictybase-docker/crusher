@@ -1,7 +1,7 @@
 package containercreate
 
 import (
-	"strings"
+	"os"
 	"testing"
 
 	E "github.com/IBM/fp-go/v2/either"
@@ -107,9 +107,12 @@ func TestRenderMount_SpecialCharacters(t *testing.T) {
 
 func TestConfigMount_IsReadonly(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
+		ConfigPath: configDir,
+		DataPath:   dataDir,
 	}
 
 	result := ValidateInput(input)
@@ -134,9 +137,12 @@ func TestConfigMount_IsReadonly(t *testing.T) {
 
 func TestDataMount_IsReadwrite(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
+		ConfigPath: configDir,
+		DataPath:   dataDir,
 	}
 
 	result := ValidateInput(input)
@@ -161,10 +167,16 @@ func TestDataMount_IsReadwrite(t *testing.T) {
 
 func TestAdditionalVolume_IsReadonly(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	parent := t.TempDir()
+	volDir := parent + "/myproject"
+	require.NoError(os.MkdirAll(volDir, 0o755))
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
-		Volumes:    []string{"/tmp/myproject"},
+		ConfigPath: configDir,
+		DataPath:   dataDir,
+		Volumes:    []string{volDir},
 	}
 
 	result := ValidateInput(input)
@@ -175,9 +187,10 @@ func TestAdditionalVolume_IsReadonly(t *testing.T) {
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
 
+	expectedTarget := ContainerHome + "/myproject"
 	var volumeMount *MountSpec
 	for i := range resolved.Mounts {
-		if strings.HasSuffix(resolved.Mounts[i].TargetPath, "myproject") {
+		if resolved.Mounts[i].TargetPath == expectedTarget {
 			volumeMount = &resolved.Mounts[i]
 			break
 		}

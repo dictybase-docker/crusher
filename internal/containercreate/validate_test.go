@@ -1,6 +1,7 @@
 package containercreate
 
 import (
+	"os"
 	"testing"
 
 	E "github.com/IBM/fp-go/v2/either"
@@ -10,9 +11,12 @@ import (
 
 func TestValidateInput_ValidMinimalInput(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
+		ConfigPath: configDir,
+		DataPath:   dataDir,
 	}
 
 	result := ValidateInput(input)
@@ -30,9 +34,12 @@ func TestValidateInput_ValidMinimalInput(t *testing.T) {
 
 func TestValidateInput_InvalidContainerName(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath:    "/tmp/config",
-		DataPath:      "/tmp/data",
+		ConfigPath:    configDir,
+		DataPath:      dataDir,
 		ContainerName: "123invalid",
 	}
 
@@ -50,9 +57,12 @@ func TestValidateInput_InvalidContainerName(t *testing.T) {
 
 func TestValidateInput_ValidContainerName(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath:    "/tmp/config",
-		DataPath:      "/tmp/data",
+		ConfigPath:    configDir,
+		DataPath:      dataDir,
 		ContainerName: "my-container_123",
 	}
 
@@ -69,10 +79,16 @@ func TestValidateInput_ValidContainerName(t *testing.T) {
 
 func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	parent := t.TempDir()
+	reservedDir := parent + "/config"
+	require.NoError(os.MkdirAll(reservedDir, 0o755))
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
-		Volumes:    []string{"/tmp/config"},
+		ConfigPath: configDir,
+		DataPath:   dataDir,
+		Volumes:    []string{reservedDir},
 	}
 
 	result := ValidateInput(input)
@@ -89,10 +105,15 @@ func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 
 func TestValidateInput_ValidVolume(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	volDir := t.TempDir()
+	require.NoError(os.MkdirAll(volDir, 0o755))
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
-		Volumes:    []string{"/tmp/myproject"},
+		ConfigPath: configDir,
+		DataPath:   dataDir,
+		Volumes:    []string{volDir},
 	}
 
 	result := ValidateInput(input)
@@ -108,10 +129,14 @@ func TestValidateInput_ValidVolume(t *testing.T) {
 
 func TestValidateInput_WorkspaceOptional(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	workspaceDir := t.TempDir()
+
 	input := Input{
-		ConfigPath:    "/tmp/config",
-		DataPath:      "/tmp/data",
-		WorkspacePath: "/tmp/workspace",
+		ConfigPath:    configDir,
+		DataPath:      dataDir,
+		WorkspacePath: workspaceDir,
 	}
 
 	result := ValidateInput(input)
@@ -128,9 +153,12 @@ func TestValidateInput_WorkspaceOptional(t *testing.T) {
 
 func TestValidateInput_DefaultImageName(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
+		ConfigPath: configDir,
+		DataPath:   dataDir,
 		ImageName:  "",
 	}
 
@@ -147,9 +175,12 @@ func TestValidateInput_DefaultImageName(t *testing.T) {
 
 func TestValidateInput_CustomImageName(t *testing.T) {
 	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+
 	input := Input{
-		ConfigPath: "/tmp/config",
-		DataPath:   "/tmp/data",
+		ConfigPath: configDir,
+		DataPath:   dataDir,
 		ImageName:  "custom:v1.0",
 	}
 

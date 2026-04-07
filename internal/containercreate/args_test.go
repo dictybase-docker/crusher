@@ -69,10 +69,14 @@ func TestRenderCommand_WithoutWorkdir(t *testing.T) {
 func TestRenderCommand_MountsSortedByTarget(t *testing.T) {
 	require := require.New(t)
 
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	workspaceDir := t.TempDir()
+
 	input := Input{
-		ConfigPath:    "/host/config",
-		DataPath:      "/host/data",
-		WorkspacePath: "/host/workspace",
+		ConfigPath:    configDir,
+		DataPath:      dataDir,
+		WorkspacePath: workspaceDir,
 	}
 
 	result := ValidateInput(input)
