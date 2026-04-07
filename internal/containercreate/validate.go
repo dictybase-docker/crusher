@@ -65,7 +65,11 @@ var EqString = Eq.FromStrictEquals[string]()
 var OrdString = Str.Ord
 
 // OrdMountSpecByTarget is the Ord instance for MountSpec sorted by TargetPath.
-var OrdMountSpecByTarget = Ord.Contramap(func(m MountSpec) string { return m.TargetPath })(OrdString)
+var OrdMountSpecByTarget = Ord.Contramap(
+	func(m MountSpec) string { return m.TargetPath },
+)(
+	OrdString,
+)
 
 // ============================================================================
 // Reserved basenames (using fp-go Record API for lookup)
@@ -104,21 +108,21 @@ var isValidVolumeBasename = F.Pipe1(
 func ValidateInput(input Input) E.Either[error, ResolvedInput] {
 	return F.Pipe4(
 		E.Of[error](input),
-		E.Chain[error](validateRequiredPaths),
-		E.Chain[error](resolvePaths),
-		E.Chain[error](validateVolumes),
+		E.Chain(validateRequiredPaths),
+		E.Chain(resolvePaths),
+		E.Chain(validateVolumes),
 		E.Map[error](buildResolvedInput),
 	)
 }
 
 // validateRequiredPaths checks that required paths are non-blank.
 func validateRequiredPaths(input Input) E.Either[error, Input] {
-	configResult := E.FromPredicate[error, string](
+	configResult := E.FromPredicate(
 		isNonBlank,
 		func(string) error { return errors.New("config path is required") },
 	)(input.ConfigPath)
 
-	dataResult := E.FromPredicate[error, string](
+	dataResult := E.FromPredicate(
 		isNonBlank,
 		func(string) error { return errors.New("data path is required") },
 	)(input.DataPath)
@@ -135,9 +139,9 @@ func validateRequiredPaths(input Input) E.Either[error, Input] {
 func resolvePaths(input Input) E.Either[error, Input] {
 	return F.Pipe3(
 		E.Of[error](input),
-		E.Chain[error](resolveConfigPath),
-		E.Chain[error](resolveDataPath),
-		E.Chain[error](resolveWorkspaceAndName),
+		E.Chain(resolveConfigPath),
+		E.Chain(resolveDataPath),
+		E.Chain(resolveWorkspaceAndName),
 	)
 }
 
@@ -181,7 +185,7 @@ func resolveDataPath(input Input) E.Either[error, Input] {
 func resolveWorkspaceAndName(input Input) E.Either[error, Input] {
 	return F.Pipe1(
 		validateContainerName(input.ContainerName),
-		E.Chain[error](func(string) E.Either[error, Input] {
+		E.Chain(func(string) E.Either[error, Input] {
 			return F.Pipe1(
 				resolveOptionalPath(input.WorkspacePath),
 				E.Map[error](func(workspace string) Input {
@@ -224,14 +228,14 @@ func validateVolumes(input Input) E.Either[error, Input] {
 func validateVolumePath(vol string) E.Either[error, string] {
 	return F.Pipe3(
 		E.Of[error](vol),
-		E.Chain[error](func(v string) E.Either[error, string] {
-			return E.FromPredicate[error, string](
+		E.Chain(func(v string) E.Either[error, string] {
+			return E.FromPredicate(
 				isNonBlank,
 				func(string) error { return errors.New("volume path cannot be blank") },
 			)(v)
 		}),
-		E.Chain[error](resolveAbsolutePath),
-		E.Chain[error](validateVolumeBasename),
+		E.Chain(resolveAbsolutePath),
+		E.Chain(validateVolumeBasename),
 	)
 }
 
@@ -239,7 +243,7 @@ func validateVolumePath(vol string) E.Either[error, string] {
 func validateVolumeBasename(absPath string) E.Either[error, string] {
 	basename := filepath.Base(absPath)
 	return F.Pipe1(
-		E.FromPredicate[error, string](
+		E.FromPredicate(
 			isValidVolumeBasename,
 			func(string) error {
 				return errors.New("volume basename '" + basename + "' is reserved or invalid")
@@ -256,10 +260,12 @@ func validateContainerName(name string) E.Either[error, string] {
 		O.Fold(
 			func() E.Either[error, string] { return E.Of[error](name) },
 			func(n string) E.Either[error, string] {
-				return E.FromPredicate[error, string](
+				return E.FromPredicate(
 					isValidContainerName,
 					func(string) error {
-						return errors.New("container name must start with a letter and contain only letters, digits, dashes, or underscores")
+						return errors.New(
+							"container name must start with a letter and contain only letters, digits, dashes, or underscores",
+						)
 					},
 				)(n)
 			},
@@ -277,7 +283,7 @@ func resolveAbsolutePath(path string) E.Either[error, string] {
 	return F.Pipe1(
 		O.FromPredicate(func(error) bool { return err == nil })(err),
 		O.Fold(
-			func() E.Either[error, string] { return E.Left[string, error](err) },
+			func() E.Either[error, string] { return E.Left[string](err) },
 			func(error) E.Either[error, string] { return E.Of[error](absPath) },
 		),
 	)
