@@ -2,6 +2,8 @@ package containercreate
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -10,12 +12,16 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	Eq "github.com/IBM/fp-go/v2/eq"
 	F "github.com/IBM/fp-go/v2/function"
+	IOE "github.com/IBM/fp-go/v2/ioeither"
+	iof "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
 	Ord "github.com/IBM/fp-go/v2/ord"
 	P "github.com/IBM/fp-go/v2/pair"
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	R "github.com/IBM/fp-go/v2/record"
 	Str "github.com/IBM/fp-go/v2/string"
+
+	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 )
 
 // ============================================================================
@@ -248,15 +254,24 @@ func validateContainerName(name string) E.Either[error, string] {
 // Path Resolution Helpers (pure functions)
 // ============================================================================
 
-// resolveAbsolutePath resolves a path to absolute form.
+// resolveAbsolutePath resolves a path to absolute form and validates it exists.
 func resolveAbsolutePath(path string) E.Either[error, string] {
-	absPath, err := filepath.Abs(path)
-	return F.Pipe1(
-		O.FromPredicate(func(error) bool { return err == nil })(err),
-		O.Fold(
-			func() E.Either[error, string] { return E.Left[string](err) },
-			func(error) E.Either[error, string] { return E.Of[error](absPath) },
-		),
+	return F.Pipe3(
+		IOE.TryCatchError(func() (string, error) {
+			return filepath.Abs(path)
+		}),
+		IOE.Chain(func(abs string) IOE.IOEither[error, string] {
+			return F.Pipe1(
+				iof.Stat(abs),
+				IOE.Map[error](func(_ os.FileInfo) string {
+					return abs
+				}),
+			)
+		}),
+		IOE.MapLeft[string](func(err error) error {
+			return fmt.Errorf("path validation failed: %w", err)
+		}),
+		FP.ToEither[error, string],
 	)
 }
 
