@@ -87,9 +87,9 @@ func pickRandom[T any](items []T) T {
 }
 
 // randomInt returns a cryptographically secure random integer in [0, max).
-func randomInt(max int) int {
+func randomInt(limit int) int {
 	return F.Pipe1(
-		O.FromPredicate(func(int) bool { return max > 0 })(max),
+		O.FromPredicate(func(int) bool { return limit > 0 })(limit),
 		O.Fold(
 			func() int { return 0 },
 			func(m int) int {
@@ -98,7 +98,7 @@ func randomInt(max int) int {
 					O.FromPredicate(func(error) bool { return err == nil })(err),
 					O.Fold(
 						func() int {
-							return int(uint64(time.Now().UnixNano()) % uint64(m))
+							return int(time.Now().UnixNano()) % m
 						},
 						func(error) int { return int(n.Int64()) },
 					),
