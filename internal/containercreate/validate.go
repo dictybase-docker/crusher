@@ -106,6 +106,32 @@ var isValidVolumeBasename = F.Pipe1(
 )
 
 // ============================================================================
+// Normalization (pure, resolves defaults before validation)
+// ============================================================================
+
+// NormalizeInput resolves all defaults, producing a fully-specified Input.
+// After this, ImageName and ContainerName are guaranteed non-blank.
+func NormalizeInput(input Input) Input {
+	return Input{
+		ImageName: F.Pipe2(
+			input.ImageName,
+			O.FromPredicate(isNonBlank),
+			O.GetOrElse(func() string { return DefaultImageName }),
+		),
+		ContainerName: F.Pipe2(
+			input.ContainerName,
+			O.FromPredicate(isNonBlank),
+			O.GetOrElse(GenerateName),
+		),
+		ConfigPath:    input.ConfigPath,
+		DataPath:      input.DataPath,
+		WorkspacePath: input.WorkspacePath,
+		Volumes:       input.Volumes,
+		Ctx:           input.Ctx,
+	}
+}
+
+// ============================================================================
 // Validation Functions (pure, using fp-go Either API)
 // ============================================================================
 
@@ -124,8 +150,9 @@ func ValidateInput(input Input) E.Either[error, ResolvedInput] {
 
 // resolveConfigPath resolves the config path to absolute.
 func resolveConfigPath(input Input) E.Either[error, Input] {
-	return F.Pipe1(
-		resolveAbsolutePath(input.ConfigPath),
+	return F.Pipe2(
+		input.ConfigPath,
+		resolveAbsolutePath,
 		E.Map[error](func(p string) Input {
 			return Input{
 				ImageName:     input.ImageName,
@@ -142,8 +169,9 @@ func resolveConfigPath(input Input) E.Either[error, Input] {
 
 // resolveDataPath resolves the data path to absolute.
 func resolveDataPath(input Input) E.Either[error, Input] {
-	return F.Pipe1(
-		resolveAbsolutePath(input.DataPath),
+	return F.Pipe2(
+		input.DataPath,
+		resolveAbsolutePath,
 		E.Map[error](func(p string) Input {
 			return Input{
 				ImageName:     input.ImageName,
@@ -158,7 +186,7 @@ func resolveDataPath(input Input) E.Either[error, Input] {
 	)
 }
 
-// resolveWorkspaceAndName resolves workspace path and validates container name.
+// resolveWorkspaceAndName resolves the workspace path if provided.
 func resolveWorkspaceAndName(input Input) E.Either[error, Input] {
 	return F.Pipe1(
 		validateContainerName(input.ContainerName),
@@ -167,7 +195,7 @@ func resolveWorkspaceAndName(input Input) E.Either[error, Input] {
 				resolveOptionalPath(input.WorkspacePath),
 				E.Map[error](func(workspace string) Input {
 					return Input{
-						ImageName:     resolveImageName(input.ImageName),
+						ImageName:     input.ImageName,
 						ContainerName: input.ContainerName,
 						ConfigPath:    input.ConfigPath,
 						DataPath:      input.DataPath,
@@ -230,24 +258,16 @@ func validateVolumeBasename(absPath string) E.Either[error, string] {
 	)
 }
 
-// validateContainerName validates container name if provided.
+// validateContainerName validates container name (always called with non-blank name).
 func validateContainerName(name string) E.Either[error, string] {
-	return F.Pipe1(
-		O.FromPredicate(isNonBlank)(name),
-		O.Fold(
-			func() E.Either[error, string] { return E.Of[error](name) },
-			func(n string) E.Either[error, string] {
-				return E.FromPredicate(
-					isValidContainerName,
-					func(string) error {
-						return errors.New(
-							"container name must start with a letter and contain only letters, digits, dashes, or underscores",
-						)
-					},
-				)(n)
-			},
-		),
-	)
+	return E.FromPredicate(
+		isValidContainerName,
+		func(string) error {
+			return errors.New(
+				"container name must start with a letter and contain only letters, digits, dashes, or underscores",
+			)
+		},
+	)(name)
 }
 
 // ============================================================================
@@ -286,15 +306,6 @@ func resolveOptionalPath(path string) E.Either[error, string] {
 	)
 }
 
-// resolveImageName returns the default image name if blank.
-func resolveImageName(name string) string {
-	return F.Pipe2(
-		O.FromPredicate(isNonBlank)(name),
-		O.GetOrElse(func() string { return DefaultImageName }),
-		F.Identity[string],
-	)
-}
-
 // ============================================================================
 // Build ResolvedInput (pure transformation)
 // ============================================================================
@@ -303,19 +314,10 @@ func resolveImageName(name string) string {
 func buildResolvedInput(input Input) ResolvedInput {
 	return ResolvedInput{
 		ImageName:     input.ImageName,
-		ContainerName: resolveContainerName(input.ContainerName),
+		ContainerName: input.ContainerName,
 		Mounts:        buildMounts(input),
 		Workdir:       buildWorkdir(input.WorkspacePath),
 	}
-}
-
-// resolveContainerName returns the provided name or generates a new one.
-func resolveContainerName(name string) string {
-	return F.Pipe2(
-		O.FromPredicate(isNonBlank)(name),
-		O.GetOrElse(GenerateName),
-		F.Identity[string],
-	)
 }
 
 // buildMounts constructs the mount specifications in order.

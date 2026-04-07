@@ -68,10 +68,11 @@ func Command() *cli.Command {
 }
 
 // Action is the create subcommand entry point.
-// Pipeline: validate input → execute container create → return result.
+// Pipeline: normalize input → validate input → execute container create → return result.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	return F.Pipe5(
+	return F.Pipe6(
 		InputFromCommand(ctx, cmd),
+		NormalizeInput,
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
