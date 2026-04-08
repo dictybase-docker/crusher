@@ -18,7 +18,10 @@ func RenderCommand(rinput ResolvedInput) CommandSpec {
 			"--name",
 			rinput.ContainerName,
 		}),
-		A.Concat(renderAllMounts(rinput.Mounts)),
+		A.Concat(F.Pipe1(
+			rinput.Mounts,
+			A.Chain(renderMount),
+		)),
 		A.Concat([]string{
 			"--env",
 			fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
