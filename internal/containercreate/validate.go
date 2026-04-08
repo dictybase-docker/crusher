@@ -256,7 +256,7 @@ func buildResolvedInput(input Input) ResolvedInput {
 		A.Push(MountSpec{
 			HostPath:   input.ConfigPath,
 			TargetPath: ConfigTarget,
-			Readonly:   true,
+			Readonly:   false,
 		}),
 		A.Push(MountSpec{
 			HostPath:   input.DataPath,

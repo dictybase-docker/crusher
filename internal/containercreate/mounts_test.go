@@ -98,7 +98,7 @@ func TestRenderMount_SpecialCharacters(t *testing.T) {
 	require.Contains(result[1], "target=/container/path-with-dashes")
 }
 
-func TestConfigMount_IsReadonly(t *testing.T) {
+func TestConfigMount_IsReadwrite(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
@@ -129,7 +129,7 @@ func TestConfigMount_IsReadonly(t *testing.T) {
 	}
 
 	require.NotNil(configMount, "config mount should exist")
-	require.True(configMount.Readonly, "config mount should be read-only")
+	require.False(configMount.Readonly, "config mount should be read-write")
 }
 
 func TestDataMount_IsReadwrite(t *testing.T) {
