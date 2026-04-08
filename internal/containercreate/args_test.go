@@ -79,7 +79,11 @@ func TestRenderCommand_MountsSortedByTarget(t *testing.T) {
 		WorkspacePath: workspaceDir,
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 	require.True(E.IsRight(result), "validation should succeed")
 
 	resolved := F.Pipe1(

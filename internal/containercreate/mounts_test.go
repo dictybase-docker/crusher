@@ -115,7 +115,11 @@ func TestConfigMount_IsReadonly(t *testing.T) {
 		DataPath:   dataDir,
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 	require.True(E.IsRight(result))
 
 	resolved := F.Pipe1(
@@ -145,7 +149,11 @@ func TestDataMount_IsReadwrite(t *testing.T) {
 		DataPath:   dataDir,
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 	require.True(E.IsRight(result))
 
 	resolved := F.Pipe1(
@@ -179,7 +187,11 @@ func TestAdditionalVolume_IsReadonly(t *testing.T) {
 		Volumes:    []string{volDir},
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 	require.True(E.IsRight(result))
 
 	resolved := F.Pipe1(

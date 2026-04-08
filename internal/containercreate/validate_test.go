@@ -19,7 +19,11 @@ func TestValidateInput_ValidMinimalInput(t *testing.T) {
 		DataPath:   dataDir,
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right for valid minimal input")
 
@@ -43,7 +47,11 @@ func TestValidateInput_InvalidContainerName(t *testing.T) {
 		ContainerName: "123invalid",
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsLeft(result), "expected Left for invalid container name")
 
@@ -66,7 +74,11 @@ func TestValidateInput_ValidContainerName(t *testing.T) {
 		ContainerName: "my-container_123",
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right for valid container name")
 
@@ -91,7 +103,11 @@ func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 		Volumes:    []string{reservedDir},
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsLeft(result), "expected Left for reserved volume basename")
 
@@ -116,7 +132,11 @@ func TestValidateInput_ValidVolume(t *testing.T) {
 		Volumes:    []string{volDir},
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right for valid volume")
 
@@ -139,7 +159,11 @@ func TestValidateInput_WorkspaceOptional(t *testing.T) {
 		WorkspacePath: workspaceDir,
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right with workspace")
 
@@ -162,7 +186,11 @@ func TestValidateInput_DefaultImageName(t *testing.T) {
 		ImageName:  "",
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right with default image name")
 
@@ -184,7 +212,11 @@ func TestValidateInput_CustomImageName(t *testing.T) {
 		ImageName:  "custom:v1.0",
 	}
 
-	result := ValidateInput(input)
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
 
 	require.True(E.IsRight(result), "expected Right with custom image name")
 
