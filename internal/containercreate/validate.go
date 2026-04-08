@@ -87,10 +87,11 @@ func isReservedBasename(basename string) bool {
 	)
 }
 
-// isValidVolumeBasename checks if basename is valid for volume mount.
-var isValidVolumeBasename = F.Pipe1(
+// hasValidVolumeBasename checks if the basename of a full path is valid for a volume mount.
+var hasValidVolumeBasename = F.Pipe2(
 	Pred.Not(isReservedBasename),
 	Pred.And(hasValidBasename),
+	Pred.ContraMap(filepath.Base),
 )
 
 // ============================================================================
@@ -198,51 +199,50 @@ func resolveWorkspace(input Input) E.Either[error, Input] {
 }
 
 // validateVolumes validates and resolves all additional volume paths.
+// Skips validation entirely when the volumes slice is empty.
 func validateVolumes(input Input) E.Either[error, Input] {
-	return F.Pipe3(
-		A.Map(validateVolumePath)(input.Volumes),
-		E.SequenceArray[error, string],
-		E.Map[error](func(volumes []string) Input {
-			return Input{
-				ImageName:     input.ImageName,
-				ContainerName: input.ContainerName,
-				ConfigPath:    input.ConfigPath,
-				DataPath:      input.DataPath,
-				WorkspacePath: input.WorkspacePath,
-				Volumes:       volumes,
-				Ctx:           input.Ctx,
-			}
-		}),
-		F.Identity[E.Either[error, Input]],
+	return F.Pipe2(
+		input.Volumes,
+		O.FromPredicate(func(vols []string) bool { return len(vols) > 0 }),
+		O.Fold(
+			func() E.Either[error, Input] { return E.Of[error](input) },
+			func(vols []string) E.Either[error, Input] {
+				return F.Pipe3(
+					vols,
+					A.Map(validateVolumePath),
+					E.SequenceArray[error, string],
+					E.Map[error](func(volumes []string) Input {
+						return Input{
+							ImageName:     input.ImageName,
+							ContainerName: input.ContainerName,
+							ConfigPath:    input.ConfigPath,
+							DataPath:      input.DataPath,
+							WorkspacePath: input.WorkspacePath,
+							Volumes:       volumes,
+							Ctx:           input.Ctx,
+						}
+					}),
+				)
+			},
+		),
 	)
 }
 
 // validateVolumePath validates a single volume path.
 func validateVolumePath(vol string) E.Either[error, string] {
 	return F.Pipe3(
-		E.Of[error](vol),
-		E.Chain(func(v string) E.Either[error, string] {
-			return E.FromPredicate(
-				isNonBlank,
-				func(string) error { return errors.New("volume path cannot be blank") },
-			)(v)
-		}),
-		E.Chain(resolveAbsolutePath),
-		E.Chain(validateVolumeBasename),
-	)
-}
-
-// validateVolumeBasename validates the basename of a volume path.
-func validateVolumeBasename(absPath string) E.Either[error, string] {
-	basename := filepath.Base(absPath)
-	return F.Pipe1(
+		vol,
 		E.FromPredicate(
-			isValidVolumeBasename,
-			func(string) error {
-				return errors.New("volume basename '" + basename + "' is reserved or invalid")
+			isNonBlank,
+			func(string) error { return errors.New("volume path cannot be blank") },
+		),
+		E.Chain(resolveAbsolutePath),
+		E.Chain(E.FromPredicate(
+			hasValidVolumeBasename,
+			func(p string) error {
+				return fmt.Errorf("volume basename '%s' is reserved or invalid", filepath.Base(p))
 			},
-		)(basename),
-		E.Map[error](func(string) string { return absPath }),
+		)),
 	)
 }
 
