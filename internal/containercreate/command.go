@@ -7,6 +7,7 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	P "github.com/IBM/fp-go/v2/pair"
+	Str "github.com/IBM/fp-go/v2/string"
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 	"github.com/gookit/color"
 	"github.com/urfave/cli/v3"
@@ -18,7 +19,9 @@ var (
 	nord8     = color.RGB(0x88, 0xC0, 0xD0) //nolint:mnd // Frost Bright — name anchor
 	nord9     = color.RGB(0x81, 0xA1, 0xC1) //nolint:mnd // Frost Medium — commands
 	nord14    = color.RGB(0xA3, 0xBE, 0x8C) //nolint:mnd // Aurora Green — success
-	nord8bold = color.NewPrinter(nord8.Code() + ";" + color.OpBold.Code())
+	nord8bold = color.NewPrinter(
+		Str.IntersperseSemigroup(";").Concat(nord8.Code(), color.OpBold.Code()),
+	)
 )
 
 // InputFromCommand reads CLI flags and constructs the create Input.
