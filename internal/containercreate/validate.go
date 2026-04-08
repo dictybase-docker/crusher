@@ -22,37 +22,28 @@ import (
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 )
 
-// ============================================================================
-// Predicates (using fp-go predicate API)
-// ============================================================================
+var (
+	// isBlank is true when the input becomes empty after trimming whitespace.
+	isBlank = F.Pipe1(
+		Str.IsEmpty,
+		Pred.ContraMap(strings.TrimSpace),
+	)
 
-// isBlank is true when the input becomes empty after trimming whitespace.
-var isBlank = F.Pipe1(
-	Str.IsEmpty,
-	Pred.ContraMap(strings.TrimSpace),
-)
+	// isNonBlank is the negation of isBlank.
+	isNonBlank = Pred.Not(isBlank)
 
-// isNonBlank is the negation of isBlank.
-var isNonBlank = Pred.Not(isBlank)
+	// validBasenameRegex ensures basename has at least one letter or digit.
+	validBasenameRegex = regexp.MustCompile(`[a-zA-Z0-9]`)
 
-// validBasenameRegex ensures basename has at least one letter or digit.
-var validBasenameRegex = regexp.MustCompile(`[a-zA-Z0-9]`)
+	// EqString is the Eq instance for strings.
+	EqString = Eq.FromStrictEquals[string]()
 
-// ============================================================================
-// Eq and Ord instances (using fp-go Eq and Ord API)
-// ============================================================================
-
-// EqString is the Eq instance for strings.
-var EqString = Eq.FromStrictEquals[string]()
-
-// OrdString is the Ord instance for strings (lexicographic ordering).
-var OrdString = Str.Ord
-
-// OrdMountSpecByTarget is the Ord instance for MountSpec sorted by TargetPath.
-var OrdMountSpecByTarget = Ord.Contramap(
-	func(m MountSpec) string { return m.TargetPath },
-)(
-	OrdString,
+	// OrdMountSpecByTarget is the Ord instance for MountSpec sorted by TargetPath.
+	OrdMountSpecByTarget = Ord.Contramap(
+		func(m MountSpec) string { return m.TargetPath },
+	)(
+		Str.Ord,
+	)
 )
 
 // ============================================================================
