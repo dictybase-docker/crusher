@@ -20,10 +20,9 @@ func TestRenderMount_ReadonlyMount(t *testing.T) {
 
 	result := renderMount(mount)
 
-	require.Contains(result, "type=bind")
-	require.Contains(result, "source=/host/path")
-	require.Contains(result, "target=/container/path")
-	require.Contains(result, ",readonly")
+	require.Len(result, 2)
+	require.Equal("--mount", result[0])
+	require.Contains(result[1], "type=bind")
 }
 
 func TestRenderMount_ReadwriteMount(t *testing.T) {
@@ -36,25 +35,10 @@ func TestRenderMount_ReadwriteMount(t *testing.T) {
 
 	result := renderMount(mount)
 
-	require.Contains(result, "type=bind")
-	require.Contains(result, "source=/host/path")
-	require.Contains(result, "target=/container/path")
-	require.NotContains(result, "readonly")
-}
-
-func TestRenderMountArgs_ReturnsPair(t *testing.T) {
-	require := require.New(t)
-	mount := MountSpec{
-		HostPath:   "/host/path",
-		TargetPath: "/container/path",
-		Readonly:   true,
-	}
-
-	result := renderMountArgs(mount)
-
 	require.Len(result, 2)
 	require.Equal("--mount", result[0])
 	require.Contains(result[1], "type=bind")
+	require.NotContains(result[1], "readonly")
 }
 
 func TestRenderAllMounts_MultipleMounts(t *testing.T) {
@@ -66,7 +50,7 @@ func TestRenderAllMounts_MultipleMounts(t *testing.T) {
 
 	result := F.Pipe1(
 		mounts,
-		A.Chain(renderMountArgs),
+		A.Chain(renderMount),
 	)
 
 	require.Len(result, 4)
@@ -80,7 +64,7 @@ func TestRenderAllMounts_EmptyMounts(t *testing.T) {
 
 	result := F.Pipe1(
 		mounts,
-		A.Chain(renderMountArgs),
+		A.Chain(renderMount),
 	)
 
 	require.Empty(result)
@@ -108,8 +92,10 @@ func TestRenderMount_SpecialCharacters(t *testing.T) {
 
 	result := renderMount(mount)
 
-	require.Contains(result, "source=/host/path with spaces")
-	require.Contains(result, "target=/container/path-with-dashes")
+	require.Len(result, 2)
+	require.Equal("--mount", result[0])
+	require.Contains(result[1], "source=/host/path with spaces")
+	require.Contains(result[1], "target=/container/path-with-dashes")
 }
 
 func TestConfigMount_IsReadonly(t *testing.T) {
