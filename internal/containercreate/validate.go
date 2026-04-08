@@ -15,7 +15,6 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	iof "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
-	Ord "github.com/IBM/fp-go/v2/ord"
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	Str "github.com/IBM/fp-go/v2/string"
 
@@ -37,13 +36,6 @@ var (
 
 	// EqString is the Eq instance for strings.
 	EqString = Eq.FromStrictEquals[string]()
-
-	// OrdMountSpecByTarget is the Ord instance for MountSpec sorted by TargetPath.
-	OrdMountSpecByTarget = Ord.Contramap(
-		func(m MountSpec) string { return m.TargetPath },
-	)(
-		Str.Ord,
-	)
 )
 
 // ============================================================================
@@ -251,63 +243,38 @@ func resolveAbsolutePath(path string) E.Either[error, string] {
 // Build ResolvedInput (pure transformation)
 // ============================================================================
 
-// buildResolvedInput constructs the ResolvedInput with mount specifications.
 func buildResolvedInput(input Input) ResolvedInput {
-	return ResolvedInput{
-		ImageName:     input.ImageName,
-		ContainerName: input.ContainerName,
-		Mounts:        buildMounts(input),
-		Workdir:       buildWorkdir(),
-	}
-}
-
-// buildMounts constructs the mount specifications in order.
-func buildMounts(input Input) []MountSpec {
-	return sortAdditionalMounts(A.ArrayConcatAll(
-		buildCoreMounts(input),
-		buildWorkspaceMount(input.WorkspacePath),
-		buildVolumeMounts(input.Volumes),
-	))
-}
-
-// buildCoreMounts constructs config and data mounts.
-func buildCoreMounts(input Input) []MountSpec {
-	return []MountSpec{
-		{HostPath: input.ConfigPath, TargetPath: ConfigTarget, Readonly: true},
-		{HostPath: input.DataPath, TargetPath: DataTarget, Readonly: false},
-	}
-}
-
-// buildWorkspaceMount constructs workspace mount (always present after normalization).
-func buildWorkspaceMount(workspacePath string) []MountSpec {
-	return []MountSpec{{
-		HostPath:   workspacePath,
-		TargetPath: WorkspaceTarget,
-		Readonly:   false,
-	}}
-}
-
-// buildVolumeMounts constructs additional volume mounts (all read-only).
-func buildVolumeMounts(volumes []string) []MountSpec {
-	return F.Pipe2(
-		volumes,
-		A.Filter(isNonBlank),
+	return F.Pipe5(
+		input.Volumes,
 		A.Map(func(vol string) MountSpec {
 			return MountSpec{
 				HostPath:   vol,
-				TargetPath: ContainerHome + "/" + filepath.Base(vol),
+				TargetPath: pathJoin.Concat(ContainerHome, filepath.Base(vol)),
 				Readonly:   true,
 			}
 		}),
+		A.Push(MountSpec{
+			HostPath:   input.ConfigPath,
+			TargetPath: ConfigTarget,
+			Readonly:   true,
+		}),
+		A.Push(MountSpec{
+			HostPath:   input.DataPath,
+			TargetPath: DataTarget,
+			Readonly:   false,
+		}),
+		A.Push(MountSpec{
+			HostPath:   input.WorkspacePath,
+			TargetPath: WorkspaceTarget,
+			Readonly:   false,
+		}),
+		func(mspec []MountSpec) ResolvedInput {
+			return ResolvedInput{
+				ImageName:     input.ImageName,
+				ContainerName: input.ContainerName,
+				Mounts:        mspec,
+				Workdir:       WorkspaceTarget,
+			}
+		},
 	)
-}
-
-// sortAdditionalMounts sorts mounts by TargetPath.
-func sortAdditionalMounts(mounts []MountSpec) []MountSpec {
-	return A.Sort(OrdMountSpecByTarget)(mounts)
-}
-
-// buildWorkdir returns the working directory (always WorkspaceTarget after normalization).
-func buildWorkdir() string {
-	return WorkspaceTarget
 }

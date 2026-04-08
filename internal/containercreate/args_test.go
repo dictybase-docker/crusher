@@ -1,11 +1,8 @@
 package containercreate
 
 import (
-	"strings"
 	"testing"
 
-	E "github.com/IBM/fp-go/v2/either"
-	F "github.com/IBM/fp-go/v2/function"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,53 +61,6 @@ func TestRenderCommand_WithoutWorkdir(t *testing.T) {
 	spec := RenderCommand(resolved)
 
 	require.NotContains(spec.Args, "--workdir")
-}
-
-func TestRenderCommand_MountsSortedByTarget(t *testing.T) {
-	require := require.New(t)
-
-	configDir := t.TempDir()
-	dataDir := t.TempDir()
-	workspaceDir := t.TempDir()
-
-	input := Input{
-		ConfigPath:    configDir,
-		DataPath:      dataDir,
-		WorkspacePath: workspaceDir,
-	}
-
-	result := F.Pipe2(
-		input,
-		NormalizeInput,
-		ValidateInput,
-	)
-	require.True(E.IsRight(result), "validation should succeed")
-
-	resolved := F.Pipe1(
-		result,
-		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
-	)
-
-	spec := RenderCommand(resolved)
-
-	var mountTargets []string
-	for i := 0; i < len(spec.Args)-1; i++ {
-		if spec.Args[i] == "--mount" && i+1 < len(spec.Args) {
-			mountSpec := spec.Args[i+1]
-			if strings.Contains(mountSpec, "target=") {
-				parts := strings.Split(mountSpec, ",")
-				for _, p := range parts {
-					if strings.HasPrefix(p, "target=") {
-						mountTargets = append(mountTargets, strings.TrimPrefix(p, "target="))
-					}
-				}
-			}
-		}
-	}
-
-	for i := 1; i < len(mountTargets); i++ {
-		require.LessOrEqual(mountTargets[i-1], mountTargets[i], "mounts should be sorted by target")
-	}
 }
 
 func TestRenderCommand_ImageNameIsLastArg(t *testing.T) {
