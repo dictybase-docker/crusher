@@ -6,8 +6,19 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	P "github.com/IBM/fp-go/v2/pair"
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
+	"github.com/gookit/color"
 	"github.com/urfave/cli/v3"
+)
+
+var (
+	nord4     = color.RGB(0xD8, 0xDE, 0xE9) //nolint:mnd // Polarity Snow — labels
+	nord3     = color.RGB(0x4C, 0x56, 0x6A) //nolint:mnd // Polar Dark — dimmed hints
+	nord8     = color.RGB(0x88, 0xC0, 0xD0) //nolint:mnd // Frost Bright — name anchor
+	nord9     = color.RGB(0x81, 0xA1, 0xC1) //nolint:mnd // Frost Medium — commands
+	nord14    = color.RGB(0xA3, 0xBE, 0x8C) //nolint:mnd // Aurora Green — success
+	nord8bold = color.NewPrinter(nord8.Code() + ";" + color.OpBold.Code())
 )
 
 // InputFromCommand reads CLI flags and constructs the create Input.
@@ -68,9 +79,10 @@ func Command() *cli.Command {
 }
 
 // Action is the create subcommand entry point.
-// Pipeline: normalize input → validate input → execute container create → return result.
+// Pipeline: normalize input → validate input → execute container create → fold into Pair.
+// Printing is outside the pipeline.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	return F.Pipe6(
+	result := F.Pipe6(
 		InputFromCommand(ctx, cmd),
 		NormalizeInput,
 		ValidateInput,
@@ -78,8 +90,31 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 		IOE.Chain(Execute),
 		FP.ToEither[error, ContainerResult],
 		E.Fold(
-			F.Identity[error],
-			func(ContainerResult) error { return nil },
+			func(err error) P.Pair[error, ContainerResult] {
+				return P.MakePair(err, ContainerResult{})
+			},
+			func(r ContainerResult) P.Pair[error, ContainerResult] {
+				return P.MakePair[error](nil, r)
+			},
 		),
 	)
+
+	if err := P.Head(result); err != nil {
+		return err
+	}
+
+	F.Pipe2(result, P.Tail, printResult)
+	return nil
+}
+
+func printResult(r ContainerResult) F.Void {
+	nord4.Print("Container ")
+	nord8bold.Printf("%q", r.Name)
+	nord4.Print(" ")
+	nord14.Println("created.")
+
+	nord3.Print("Start it with: ")
+	nord9.Printf("container start %s", r.Name)
+	color.Println()
+	return F.VOID
 }
