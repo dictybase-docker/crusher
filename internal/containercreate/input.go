@@ -56,6 +56,7 @@ type ResolvedInput struct {
 	ContainerName string
 	Mounts        []MountSpec
 	Workdir       string // Working directory inside container (empty if no workspace)
+	APIKey        string
 }
 
 // ContainerResult holds the result of a successful container creation.

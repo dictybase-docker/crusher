@@ -1,8 +1,6 @@
 package containercreate
 
 import (
-	"fmt"
-
 	A "github.com/IBM/fp-go/v2/array"
 	F "github.com/IBM/fp-go/v2/function"
 )
@@ -11,7 +9,7 @@ const containerBinary = "container"
 
 // RenderCommand builds the CommandSpec for "container create".
 func RenderCommand(rinput ResolvedInput) CommandSpec {
-	return F.Pipe7(
+	return F.Pipe6(
 		A.Of("create"),
 		A.Concat([]string{
 			"--name",
@@ -21,14 +19,7 @@ func RenderCommand(rinput ResolvedInput) CommandSpec {
 			rinput.Mounts,
 			A.Chain(renderMount),
 		)),
-		A.Concat([]string{
-			"--env",
-			fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
-		}),
-		A.Concat([]string{
-			"--env",
-			fmt.Sprintf("CRUSH_GLOBAL_DATA=%s", DataTarget),
-		}),
+		A.Concat(renderEnvVars(rinput.APIKey)),
 		A.Concat([]string{"--workdir", rinput.Workdir}),
 		A.Push(rinput.ImageName),
 		func(args []string) CommandSpec {

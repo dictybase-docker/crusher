@@ -70,16 +70,18 @@ func TestRenderAllMounts_EmptyMounts(t *testing.T) {
 	require.Empty(result)
 }
 
-func TestRenderEnvVars_ContainsCrushPaths(t *testing.T) {
+func TestRenderEnvVars_ContainsAllEnvVars(t *testing.T) {
 	require := require.New(t)
 
-	result := renderEnvVars()
+	result := renderEnvVars("test-api-key-123")
 
-	require.Len(result, 4)
+	require.Len(result, 6)
 	require.Equal("--env", result[0])
 	require.Contains(result[1], "CRUSH_GLOBAL_CONFIG="+ConfigTarget)
 	require.Equal("--env", result[2])
 	require.Contains(result[3], "CRUSH_GLOBAL_DATA="+DataTarget)
+	require.Equal("--env", result[4])
+	require.Contains(result[5], "OPENROUTER_API_KEY=test-api-key-123")
 }
 
 func TestRenderMount_SpecialCharacters(t *testing.T) {

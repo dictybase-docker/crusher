@@ -16,6 +16,7 @@ func TestRenderCommand_MinimalInput(t *testing.T) {
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)
@@ -38,6 +39,7 @@ func TestRenderCommand_WithWorkdir(t *testing.T) {
 			{HostPath: "/host/workspace", TargetPath: WorkspaceTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)
@@ -56,6 +58,7 @@ func TestRenderCommand_WithoutWorkdir(t *testing.T) {
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)
@@ -74,6 +77,7 @@ func TestRenderCommand_ImageNameIsLastArg(t *testing.T) {
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)
@@ -92,6 +96,7 @@ func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)
@@ -99,6 +104,7 @@ func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 	require.Contains(spec.Args, "--env")
 	require.Contains(spec.Args, "CRUSH_GLOBAL_CONFIG="+ConfigTarget)
 	require.Contains(spec.Args, "CRUSH_GLOBAL_DATA="+DataTarget)
+	require.Contains(spec.Args, "OPENROUTER_API_KEY=test-key")
 }
 
 func TestBuildArgs_ArgsOrder(t *testing.T) {
@@ -111,6 +117,7 @@ func TestBuildArgs_ArgsOrder(t *testing.T) {
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
+		APIKey:  "test-key",
 	}
 
 	spec := RenderCommand(resolved)

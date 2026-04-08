@@ -279,6 +279,7 @@ func buildResolvedInput(input Input) ResolvedInput {
 				ContainerName: input.ContainerName,
 				Mounts:        mspec,
 				Workdir:       WorkspaceTarget,
+				APIKey:        input.APIKey,
 			}
 		},
 	)
