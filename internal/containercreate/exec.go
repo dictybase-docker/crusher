@@ -11,8 +11,10 @@ import (
 
 // Execute runs the container create command and returns the result.
 func Execute(r ResolvedInput) IOE.IOEither[error, ContainerResult] {
-	return F.Pipe1(
-		runProcess(RenderCommand(r)),
+	return F.Pipe3(
+		r,
+		RenderCommand,
+		runProcess,
 		IOE.Map[error](func(F.Void) ContainerResult {
 			return ContainerResult{Name: r.ContainerName}
 		}),
