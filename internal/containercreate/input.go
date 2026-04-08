@@ -4,23 +4,29 @@ package containercreate
 
 import (
 	"context"
+
+	Str "github.com/IBM/fp-go/v2/string"
 )
 
 const (
+	// DefaultImageName is the default image name matching the build subcommand.
+	DefaultImageName = "crusher:latest"
+)
+
+var (
+	pathJoin = Str.IntersperseSemigroup("/")
+
 	// ContainerHome is the home directory inside the container.
 	ContainerHome = "/home/agent"
 
 	// ConfigTarget is the config mount target inside the container.
-	ConfigTarget = ContainerHome + "/crush/config"
+	ConfigTarget = pathJoin.Concat(ContainerHome, "crush/config")
 
 	// DataTarget is the data mount target inside the container.
-	DataTarget = ContainerHome + "/crush/data"
+	DataTarget = pathJoin.Concat(ContainerHome, "crush/data")
 
 	// WorkspaceTarget is the workspace mount target inside the container.
-	WorkspaceTarget = ContainerHome + "/workspace"
-
-	// DefaultImageName is the default image name matching the build subcommand.
-	DefaultImageName = "crusher:latest"
+	WorkspaceTarget = pathJoin.Concat(ContainerHome, "workspace")
 )
 
 // MountSpec represents a single volume mount specification.
