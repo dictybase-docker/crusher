@@ -85,9 +85,8 @@ func Command() *cli.Command {
 // Pipeline: normalize input → validate input → execute container create → fold into Pair.
 // Printing is outside the pipeline.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	result := F.Pipe6(
+	result := F.Pipe5(
 		InputFromCommand(ctx, cmd),
-		NormalizeInput,
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
