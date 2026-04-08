@@ -55,12 +55,13 @@ func TestRenderCommand_WithoutWorkdir(t *testing.T) {
 			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
 			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 		},
-		Workdir: "",
+		Workdir: WorkspaceTarget,
 	}
 
 	spec := RenderCommand(resolved)
 
-	require.NotContains(spec.Args, "--workdir")
+	require.Contains(spec.Args, "--workdir")
+	require.Contains(spec.Args, WorkspaceTarget)
 }
 
 func TestRenderCommand_ImageNameIsLastArg(t *testing.T) {

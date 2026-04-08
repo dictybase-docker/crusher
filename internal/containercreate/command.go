@@ -32,6 +32,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		ContainerName: cmd.String("name"),
 		ConfigPath:    cmd.String("config"),
 		DataPath:      cmd.String("data"),
+		APIKey:        cmd.String("api-key"),
 		WorkspacePath: cmd.String("workspace"),
 		Volumes:       cmd.StringSlice("volume"),
 	}
@@ -64,6 +65,12 @@ func Command() *cli.Command {
 				Name:     "data",
 				Aliases:  []string{"d"},
 				Usage:    "Host path to Crush data directory ",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "api-key",
+				Aliases:  []string{"k"},
+				Usage:    "API key for Crush",
 				Required: true,
 			},
 			&cli.StringFlag{
