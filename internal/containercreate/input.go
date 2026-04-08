@@ -14,6 +14,8 @@ const (
 )
 
 var (
+	mountJoin = Str.IntersperseSemigroup(",")
+
 	pathJoin = Str.IntersperseSemigroup("/")
 
 	// ContainerHome is the home directory inside the container.
