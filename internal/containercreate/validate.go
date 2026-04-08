@@ -16,9 +16,7 @@ import (
 	iof "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
 	Ord "github.com/IBM/fp-go/v2/ord"
-	P "github.com/IBM/fp-go/v2/pair"
 	Pred "github.com/IBM/fp-go/v2/predicate"
-	R "github.com/IBM/fp-go/v2/record"
 	Str "github.com/IBM/fp-go/v2/string"
 
 	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
@@ -40,14 +38,6 @@ var isNonBlank = Pred.Not(isBlank)
 // validBasenameRegex ensures basename has at least one letter or digit.
 var validBasenameRegex = regexp.MustCompile(`[a-zA-Z0-9]`)
 
-// hasValidBasename checks if basename contains at least one letter or digit.
-var hasValidBasename = F.Pipe1(
-	Pred.Not(isBlank),
-	Pred.And(func(basename string) bool {
-		return validBasenameRegex.MatchString(basename)
-	}),
-)
-
 // ============================================================================
 // Eq and Ord instances (using fp-go Eq and Ord API)
 // ============================================================================
@@ -66,33 +56,19 @@ var OrdMountSpecByTarget = Ord.Contramap(
 )
 
 // ============================================================================
-// Reserved basenames (using fp-go Record API for lookup)
+// Reserved basenames
 // ============================================================================
 
-// reservedBasenames is a Record of reserved mount target basenames.
-var reservedBasenames = F.Pipe2(
-	[]string{"config", "data", "crush"},
-	A.Map(func(s string) P.Pair[string, bool] {
-		return P.MakePair(s, true)
-	}),
-	R.FromEntries[string, bool],
-)
-
-// isReservedBasename checks if basename is reserved using Record lookup.
+// isReservedBasename checks if basename is reserved.
 func isReservedBasename(basename string) bool {
 	return F.Pipe2(
-		reservedBasenames,
-		R.Lookup[bool](basename),
+		A.From("config", "data", "crush"),
+		A.FindFirst(func(s string) bool {
+			return EqString.Equals(s, basename)
+		}),
 		O.IsSome,
 	)
 }
-
-// hasValidVolumeBasename checks if the basename of a full path is valid for a volume mount.
-var hasValidVolumeBasename = F.Pipe2(
-	Pred.Not(isReservedBasename),
-	Pred.And(hasValidBasename),
-	Pred.ContraMap(filepath.Base),
-)
 
 // ============================================================================
 // Normalization (pure, resolves defaults before validation)
@@ -234,13 +210,22 @@ func validateVolumePath(vol string) E.Either[error, string] {
 		vol,
 		E.FromPredicate(
 			isNonBlank,
-			func(string) error { return errors.New("volume path cannot be blank") },
+			func(string) error {
+				return errors.New("volume path cannot be blank")
+			},
 		),
 		E.Chain(resolveAbsolutePath),
 		E.Chain(E.FromPredicate(
-			hasValidVolumeBasename,
-			func(p string) error {
-				return fmt.Errorf("volume basename '%s' is reserved or invalid", filepath.Base(p))
+			F.Pipe2(
+				Pred.Not(isReservedBasename),
+				Pred.And(validBasenameRegex.MatchString),
+				Pred.ContraMap(filepath.Base),
+			),
+			func(bp string) error {
+				return fmt.Errorf(
+					"volume basename '%s' is reserved or invalid",
+					filepath.Base(bp),
+				)
 			},
 		)),
 	)
