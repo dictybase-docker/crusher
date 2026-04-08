@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	"github.com/stretchr/testify/require"
@@ -63,7 +64,10 @@ func TestRenderAllMounts_MultipleMounts(t *testing.T) {
 		{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
 	}
 
-	result := renderAllMounts(mounts)
+	result := F.Pipe1(
+		mounts,
+		A.Chain(renderMountArgs),
+	)
 
 	require.Len(result, 4)
 	require.Equal("--mount", result[0])
@@ -74,7 +78,10 @@ func TestRenderAllMounts_EmptyMounts(t *testing.T) {
 	require := require.New(t)
 	mounts := []MountSpec{}
 
-	result := renderAllMounts(mounts)
+	result := F.Pipe1(
+		mounts,
+		A.Chain(renderMountArgs),
+	)
 
 	require.Empty(result)
 }
