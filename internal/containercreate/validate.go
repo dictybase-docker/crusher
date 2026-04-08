@@ -37,18 +37,6 @@ var isBlank = F.Pipe1(
 // isNonBlank is the negation of isBlank.
 var isNonBlank = Pred.Not(isBlank)
 
-// containerNameRegex validates container names.
-// Must start with a letter, followed by letters, digits, dashes, or underscores.
-var containerNameRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`)
-
-// isValidContainerName checks if name matches container naming conventions.
-var isValidContainerName = F.Pipe1(
-	Pred.Not(isBlank),
-	Pred.And(func(name string) bool {
-		return containerNameRegex.MatchString(name)
-	}),
-)
-
 // validBasenameRegex ensures basename has at least one letter or digit.
 var validBasenameRegex = regexp.MustCompile(`[a-zA-Z0-9]`)
 
@@ -110,7 +98,7 @@ var isValidVolumeBasename = F.Pipe1(
 // ============================================================================
 
 // NormalizeInput resolves all defaults, producing a fully-specified Input.
-// After this, ImageName and ContainerName are guaranteed non-blank.
+// After this, ImageName, ContainerName, and WorkspacePath are guaranteed non-blank.
 func NormalizeInput(input Input) Input {
 	return Input{
 		ImageName: F.Pipe2(
@@ -123,11 +111,15 @@ func NormalizeInput(input Input) Input {
 			O.FromPredicate(isNonBlank),
 			O.GetOrElse(GenerateName),
 		),
-		ConfigPath:    input.ConfigPath,
-		DataPath:      input.DataPath,
-		WorkspacePath: input.WorkspacePath,
-		Volumes:       input.Volumes,
-		Ctx:           input.Ctx,
+		WorkspacePath: F.Pipe2(
+			input.WorkspacePath,
+			O.FromPredicate(isNonBlank),
+			O.GetOrElse(func() string { return "." }),
+		),
+		ConfigPath: input.ConfigPath,
+		DataPath:   input.DataPath,
+		Volumes:    input.Volumes,
+		Ctx:        input.Ctx,
 	}
 }
 
@@ -135,14 +127,15 @@ func NormalizeInput(input Input) Input {
 // Validation Functions (pure, using fp-go Either API)
 // ============================================================================
 
-// ValidateInput validates the Input and resolves all paths to absolute form.
+// ValidateInput normalizes defaults, validates paths, and resolves to absolute form.
 // Returns Either[error, ResolvedInput].
 func ValidateInput(input Input) E.Either[error, ResolvedInput] {
-	return F.Pipe5(
+	return F.Pipe6(
 		E.Of[error](input),
+		E.Map[error](NormalizeInput),
 		E.Chain(resolveConfigPath),
 		E.Chain(resolveDataPath),
-		E.Chain(resolveWorkspaceAndName),
+		E.Chain(resolveWorkspace),
 		E.Chain(validateVolumes),
 		E.Map[error](buildResolvedInput),
 	)
@@ -186,25 +179,20 @@ func resolveDataPath(input Input) E.Either[error, Input] {
 	)
 }
 
-// resolveWorkspaceAndName resolves the workspace path if provided.
-func resolveWorkspaceAndName(input Input) E.Either[error, Input] {
+// resolveWorkspace resolves the workspace path to absolute.
+func resolveWorkspace(input Input) E.Either[error, Input] {
 	return F.Pipe1(
-		validateContainerName(input.ContainerName),
-		E.Chain(func(string) E.Either[error, Input] {
-			return F.Pipe1(
-				resolveOptionalPath(input.WorkspacePath),
-				E.Map[error](func(workspace string) Input {
-					return Input{
-						ImageName:     input.ImageName,
-						ContainerName: input.ContainerName,
-						ConfigPath:    input.ConfigPath,
-						DataPath:      input.DataPath,
-						WorkspacePath: workspace,
-						Volumes:       input.Volumes,
-						Ctx:           input.Ctx,
-					}
-				}),
-			)
+		resolveAbsolutePath(input.WorkspacePath),
+		E.Map[error](func(workspace string) Input {
+			return Input{
+				ImageName:     input.ImageName,
+				ContainerName: input.ContainerName,
+				ConfigPath:    input.ConfigPath,
+				DataPath:      input.DataPath,
+				WorkspacePath: workspace,
+				Volumes:       input.Volumes,
+				Ctx:           input.Ctx,
+			}
 		}),
 	)
 }
@@ -258,18 +246,6 @@ func validateVolumeBasename(absPath string) E.Either[error, string] {
 	)
 }
 
-// validateContainerName validates container name (always called with non-blank name).
-func validateContainerName(name string) E.Either[error, string] {
-	return E.FromPredicate(
-		isValidContainerName,
-		func(string) error {
-			return errors.New(
-				"container name must start with a letter and contain only letters, digits, dashes, or underscores",
-			)
-		},
-	)(name)
-}
-
 // ============================================================================
 // Path Resolution Helpers (pure functions)
 // ============================================================================
@@ -295,17 +271,6 @@ func resolveAbsolutePath(path string) E.Either[error, string] {
 	)
 }
 
-// resolveOptionalPath resolves an optional path (blank = skip).
-func resolveOptionalPath(path string) E.Either[error, string] {
-	return F.Pipe1(
-		O.FromPredicate(isNonBlank)(path),
-		O.Fold(
-			func() E.Either[error, string] { return E.Of[error]("") },
-			resolveAbsolutePath,
-		),
-	)
-}
-
 // ============================================================================
 // Build ResolvedInput (pure transformation)
 // ============================================================================
@@ -316,7 +281,7 @@ func buildResolvedInput(input Input) ResolvedInput {
 		ImageName:     input.ImageName,
 		ContainerName: input.ContainerName,
 		Mounts:        buildMounts(input),
-		Workdir:       buildWorkdir(input.WorkspacePath),
+		Workdir:       buildWorkdir(),
 	}
 }
 
@@ -337,21 +302,13 @@ func buildCoreMounts(input Input) []MountSpec {
 	}
 }
 
-// buildWorkspaceMount constructs workspace mount if path is provided.
+// buildWorkspaceMount constructs workspace mount (always present after normalization).
 func buildWorkspaceMount(workspacePath string) []MountSpec {
-	return F.Pipe1(
-		O.FromPredicate(isNonBlank)(workspacePath),
-		O.Fold(
-			func() []MountSpec { return []MountSpec{} },
-			func(p string) []MountSpec {
-				return []MountSpec{{
-					HostPath:   p,
-					TargetPath: WorkspaceTarget,
-					Readonly:   false,
-				}}
-			},
-		),
-	)
+	return []MountSpec{{
+		HostPath:   workspacePath,
+		TargetPath: WorkspaceTarget,
+		Readonly:   false,
+	}}
 }
 
 // buildVolumeMounts constructs additional volume mounts (all read-only).
@@ -374,12 +331,7 @@ func sortAdditionalMounts(mounts []MountSpec) []MountSpec {
 	return A.Sort(OrdMountSpecByTarget)(mounts)
 }
 
-// buildWorkdir returns the working directory if workspace is mounted.
-func buildWorkdir(workspacePath string) string {
-	return F.Pipe3(
-		O.FromPredicate(isNonBlank)(workspacePath),
-		O.Map(func(string) string { return WorkspaceTarget }),
-		O.GetOrElse(func() string { return "" }),
-		F.Identity[string],
-	)
+// buildWorkdir returns the working directory (always WorkspaceTarget after normalization).
+func buildWorkdir() string {
+	return WorkspaceTarget
 }

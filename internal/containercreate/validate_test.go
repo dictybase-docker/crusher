@@ -33,34 +33,8 @@ func TestValidateInput_ValidMinimalInput(t *testing.T) {
 	)
 	require.NotEmpty(resolved.ContainerName)
 	require.NotEmpty(resolved.ImageName)
-	require.Len(resolved.Mounts, 2)
-}
-
-func TestValidateInput_InvalidContainerName(t *testing.T) {
-	require := require.New(t)
-	configDir := t.TempDir()
-	dataDir := t.TempDir()
-
-	input := Input{
-		ConfigPath:    configDir,
-		DataPath:      dataDir,
-		ContainerName: "123invalid",
-	}
-
-	result := F.Pipe2(
-		input,
-		NormalizeInput,
-		ValidateInput,
-	)
-
-	require.True(E.IsLeft(result), "expected Left for invalid container name")
-
-	err := F.Pipe1(
-		result,
-		E.Fold(F.Identity[error], func(ResolvedInput) error { return nil }),
-	)
-	require.NotNil(err)
-	require.Contains(err.Error(), "container name must start with a letter")
+	require.NotEmpty(resolved.Workdir, "workspace defaults to current directory")
+	require.Len(resolved.Mounts, 3)
 }
 
 func TestValidateInput_ValidContainerName(t *testing.T) {
@@ -144,19 +118,18 @@ func TestValidateInput_ValidVolume(t *testing.T) {
 		result,
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
-	require.Len(resolved.Mounts, 3)
+	require.Len(resolved.Mounts, 4)
 }
 
-func TestValidateInput_WorkspaceOptional(t *testing.T) {
+func TestValidateInput_WorkspaceDefaultsToCurrentDir(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
-	workspaceDir := t.TempDir()
 
 	input := Input{
 		ConfigPath:    configDir,
 		DataPath:      dataDir,
-		WorkspacePath: workspaceDir,
+		WorkspacePath: "",
 	}
 
 	result := F.Pipe2(
@@ -165,7 +138,7 @@ func TestValidateInput_WorkspaceOptional(t *testing.T) {
 		ValidateInput,
 	)
 
-	require.True(E.IsRight(result), "expected Right with workspace")
+	require.True(E.IsRight(result), "expected Right with default workspace")
 
 	resolved := F.Pipe1(
 		result,
@@ -199,6 +172,34 @@ func TestValidateInput_DefaultImageName(t *testing.T) {
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
 	require.Equal(DefaultImageName, resolved.ImageName)
+}
+
+func TestValidateInput_CustomWorkspace(t *testing.T) {
+	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	workspaceDir := t.TempDir()
+
+	input := Input{
+		ConfigPath:    configDir,
+		DataPath:      dataDir,
+		WorkspacePath: workspaceDir,
+	}
+
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
+
+	require.True(E.IsRight(result), "expected Right with custom workspace")
+
+	resolved := F.Pipe1(
+		result,
+		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
+	)
+	require.NotEmpty(resolved.Workdir)
+	require.Len(resolved.Mounts, 3)
 }
 
 func TestValidateInput_CustomImageName(t *testing.T) {

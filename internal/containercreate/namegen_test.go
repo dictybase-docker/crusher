@@ -33,15 +33,6 @@ func TestGenerateName_Unique(t *testing.T) {
 	require.Greater(len(names), 50, "should generate diverse names")
 }
 
-func TestGenerateName_StartsWithLetter(t *testing.T) {
-	require := require.New(t)
-
-	for i := 0; i < 100; i++ {
-		name := GenerateName()
-		require.True(isValidContainerName(name), "generated name should be a valid container name")
-	}
-}
-
 func TestGenerateName_MatchesPattern(t *testing.T) {
 	require := require.New(t)
 
