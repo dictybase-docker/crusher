@@ -9,7 +9,7 @@ const containerBinary = "container"
 
 // RenderCommand builds the CommandSpec for "container create".
 func RenderCommand(rinput ResolvedInput) CommandSpec {
-	return F.Pipe6(
+	return F.Pipe7(
 		A.Of("create"),
 		A.Concat([]string{
 			"--name",
@@ -21,6 +21,7 @@ func RenderCommand(rinput ResolvedInput) CommandSpec {
 		)),
 		A.Concat(renderEnvVars(rinput.APIKey)),
 		A.Concat([]string{"--workdir", rinput.Workdir}),
+		A.Concat([]string{"--interactive", "--tty"}),
 		A.Push(rinput.ImageName),
 		func(args []string) CommandSpec {
 			return CommandSpec{Bin: containerBinary, Args: args}
