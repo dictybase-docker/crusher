@@ -107,6 +107,25 @@ func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 	require.Contains(spec.Args, "OPENROUTER_API_KEY=test-key")
 }
 
+func TestRenderCommand_AlwaysHasInteractiveAndTTY(t *testing.T) {
+	require := require.New(t)
+	resolved := ResolvedInput{
+		ImageName:     "crusher:latest",
+		ContainerName: "test-container",
+		Mounts: []MountSpec{
+			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+		},
+		Workdir: "",
+		APIKey:  "test-key",
+	}
+
+	spec := RenderCommand(resolved)
+
+	require.Contains(spec.Args, "--interactive")
+	require.Contains(spec.Args, "--tty")
+}
+
 func TestBuildArgs_ArgsOrder(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
