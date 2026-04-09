@@ -1,24 +1,50 @@
+# --- Stage 1: Build sem and sem-mcp from source ---
+FROM rust:1-slim-bookworm AS sem-builder
+
+ARG SEM_VERSION=latest
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    pkg-config \
+    libssl-dev \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    SEM_VER="${SEM_VERSION}"; \
+    if [ "${SEM_VER}" = "latest" ]; then \
+        SEM_VER="$(git ls-remote --tags --sort=-v:refname https://github.com/Ataraxy-Labs/sem.git | head -n1 | sed 's/.*refs\/tags\///')"; \
+        if [ -z "${SEM_VER}" ]; then \
+            echo "failed to resolve sem latest version" >&2; exit 1; \
+        fi; \
+    fi; \
+    if [ "${SEM_VER#v}" = "${SEM_VER}" ]; then \
+        SEM_VER="v${SEM_VER}"; \
+    fi; \
+    git clone --branch "${SEM_VER}" --depth 1 https://github.com/Ataraxy-Labs/sem.git /build; \
+    cd /build/crates; \
+    cargo build --release -p sem-cli -p sem-mcp
+
+# --- Stage 2: Runtime image ---
 FROM docker/sandbox-templates:shell
 
 USER root
 
-# Build arguments for tool versions (defaults match CLI defaults)
 ARG GOLANGCI_LINT_VERSION=2.11.4
 ARG CRUSH_VERSION=latest
 ARG GOTESTSUM_VERSION=latest
 ARG MOXIDE_VERSION=latest
 ARG SEM_VERSION=latest
 
-# Install apt packages: ripgrep, gopls, fd-find, wget
 RUN apt-get update && apt-get install -y \
     ripgrep \
     gopls \
     fd-find \
     wget \
+    ca-certificates \
+    libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install golangci-lint from official .deb package
-# Uses build argument for version
 RUN set -eux; \
     GOLANGCI_DEB="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-arm64.deb"; \
     GOLANGCI_URL="https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${GOLANGCI_DEB}"; \
@@ -26,9 +52,6 @@ RUN set -eux; \
     dpkg -i "/tmp/${GOLANGCI_DEB}"; \
     rm -f "/tmp/${GOLANGCI_DEB}"
 
-# Install Go tools to /usr/local/bin (system-wide)
-# Uses build arguments for versions
-# Both crush and gotestsum require 'v' prefix (e.g., v0.55.0), prepend if missing
 RUN CRUSH_VER="${CRUSH_VERSION}"; \
     GOTESTSUM_VER="${GOTESTSUM_VERSION}"; \
     if [ "${CRUSH_VER}" != "latest" ] && [ "${CRUSH_VER#v}" = "${CRUSH_VER}" ]; then \
@@ -42,9 +65,6 @@ RUN CRUSH_VER="${CRUSH_VERSION}"; \
     mv /tmp/go/bin/* /usr/local/bin/ && \
     rm -rf /tmp/go
 
-# Install binary tools from GitHub releases
-# install_github_binary(repo, version, asset_template, install_name, fallback_version, arch_x86, arch_arm64)
-# Asset template uses {VER} and {ARCH} placeholders; .tar.gz assets are extracted automatically
 RUN set -eux; \
     install_github_binary() { \
         repo=$1; ver=$2; asset_tpl=$3; name=$4; fallback=$5; arch_x86=$6; arch_arm64=$7; \
@@ -79,9 +99,10 @@ RUN set -eux; \
     }; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
-        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu && \
-    install_github_binary "Ataraxy-Labs/sem" "${SEM_VERSION}" \
-        "sem-{ARCH}.tar.gz" sem v0.3.14 \
-        linux-x86_64 linux-arm64
+        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+
+COPY --from=sem-builder /build/target/release/sem /usr/local/bin/sem
+COPY --from=sem-builder /build/target/release/sem-mcp /usr/local/bin/sem-mcp
 
 USER agent
+RUN sem setup
