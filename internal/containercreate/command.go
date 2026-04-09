@@ -15,9 +15,8 @@ import (
 
 var (
 	nord4     = color.RGB(0xD8, 0xDE, 0xE9) //nolint:mnd // Polarity Snow — labels
-	nord3     = color.RGB(0x4C, 0x56, 0x6A) //nolint:mnd // Polar Dark — dimmed hints
 	nord8     = color.RGB(0x88, 0xC0, 0xD0) //nolint:mnd // Frost Bright — name anchor
-	nord9     = color.RGB(0x81, 0xA1, 0xC1) //nolint:mnd // Frost Medium — commands
+	nord10    = color.RGB(0x5E, 0x81, 0xAC) //nolint:mnd // Frost Dark — soothing command hints
 	nord14    = color.RGB(0xA3, 0xBE, 0x8C) //nolint:mnd // Aurora Green — success
 	nord8bold = color.NewPrinter(
 		Str.IntersperseSemigroup(";").Concat(nord8.Code(), color.OpBold.Code()),
@@ -122,5 +121,9 @@ func printResult(r ContainerResult) F.Void {
 	nord8bold.Printf("%q", r.Name)
 	nord4.Print(" ")
 	nord14.Println("created and started.")
+
+	nord8.Print("Attach with: ")
+	nord10.Printf("container exec -it %s /bin/bash", r.Name)
+	color.Println()
 	return F.VOID
 }
