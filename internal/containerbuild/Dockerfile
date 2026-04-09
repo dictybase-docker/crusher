@@ -21,9 +21,8 @@ RUN set -eux; \
     if [ "${SEM_VER#v}" = "${SEM_VER}" ]; then \
         SEM_VER="v${SEM_VER}"; \
     fi; \
-    git clone --branch "${SEM_VER}" --depth 1 https://github.com/Ataraxy-Labs/sem.git /build; \
-    cd /build/crates; \
-    cargo build --release -p sem-cli -p sem-mcp
+    git clone --branch "${SEM_VER}" --depth 1 https://github.com/Ataraxy-Labs/sem.git /build && \
+    cargo build --release -p sem-cli -p sem-mcp --manifest-path /build/crates/Cargo.toml
 
 # --- Stage 2: Runtime image ---
 FROM docker/sandbox-templates:shell
@@ -101,8 +100,8 @@ RUN set -eux; \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
         x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 
-COPY --from=sem-builder /build/target/release/sem /usr/local/bin/sem
-COPY --from=sem-builder /build/target/release/sem-mcp /usr/local/bin/sem-mcp
+COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
+COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
 
 USER agent
 RUN sem setup
