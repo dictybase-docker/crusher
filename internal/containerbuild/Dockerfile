@@ -42,56 +42,46 @@ RUN CRUSH_VER="${CRUSH_VERSION}"; \
     mv /tmp/go/bin/* /usr/local/bin/ && \
     rm -rf /tmp/go
 
-# Install markdown-oxide binary (supports version arg and arch detection)
+# Install binary tools from GitHub releases
+# install_github_binary(repo, version, asset_template, install_name, fallback_version, arch_x86, arch_arm64)
+# Asset template uses {VER} and {ARCH} placeholders; .tar.gz assets are extracted automatically
 RUN set -eux; \
-    MOXIDE_VER="${MOXIDE_VERSION}"; \
-    if [ "${MOXIDE_VER}" = "latest" ]; then \
-        MOXIDE_VER="$(wget -qO- https://api.github.com/repos/Feel-ix-343/markdown-oxide/releases/latest | awk -F\" '/tag_name/ {print $4; exit}')"; \
-        if [ -z "${MOXIDE_VER}" ]; then \
-            echo "failed to resolve markdown-oxide latest version, falling back" >&2; \
-            MOXIDE_VER="v0.25.10"; \
+    install_github_binary() { \
+        repo=$1; ver=$2; asset_tpl=$3; name=$4; fallback=$5; arch_x86=$6; arch_arm64=$7; \
+        if [ "${ver}" = "latest" ]; then \
+            ver="$(wget -qO- "https://api.github.com/repos/${repo}/releases/latest" | awk -F\" '/tag_name/ {print $4; exit}')"; \
+            if [ -z "${ver}" ]; then \
+                echo "failed to resolve ${repo} latest version, falling back" >&2; \
+                ver="${fallback}"; \
+            fi; \
         fi; \
-    fi; \
-    if [ "${MOXIDE_VER#v}" = "${MOXIDE_VER}" ]; then \
-        MOXIDE_VER="v${MOXIDE_VER}"; \
-    fi; \
-    case "$(uname -m)" in \
-        x86_64) ARCH="x86_64-unknown-linux-gnu" ;; \
-        aarch64|arm64) ARCH="aarch64-unknown-linux-gnu" ;; \
-        *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
-    esac; \
-    MOX_BIN="markdown-oxide-${MOXIDE_VER}-${ARCH}"; \
-    MOX_URL="https://github.com/Feel-ix-343/markdown-oxide/releases/download/${MOXIDE_VER}/${MOX_BIN}"; \
-    wget -q --retry-connrefused --tries=3 --timeout=30 -O "/tmp/${MOX_BIN}" "${MOX_URL}"; \
-    install -m 0755 "/tmp/${MOX_BIN}" /usr/local/bin/markdown-oxide; \
-    /usr/local/bin/markdown-oxide --version >/dev/null 2>&1 || true; \
-    rm -f "/tmp/${MOX_BIN}"
-
-# Install sem - Semantic Version Control CLI
-# Uses build argument for version
-RUN set -eux; \
-    SEM_VER="${SEM_VERSION}"; \
-    if [ "${SEM_VER}" = "latest" ]; then \
-        SEM_VER="$(wget -qO- https://api.github.com/repos/Ataraxy-Labs/sem/releases/latest | awk -F\" '/tag_name/ {print $4; exit}')"; \
-        if [ -z "${SEM_VER}" ]; then \
-            echo "failed to resolve sem latest version, falling back" >&2; \
-            SEM_VER="v0.3.14"; \
+        if [ "${ver#v}" = "${ver}" ]; then \
+            ver="v${ver}"; \
         fi; \
-    fi; \
-    if [ "${SEM_VER#v}" = "${SEM_VER}" ]; then \
-        SEM_VER="v${SEM_VER}"; \
-    fi; \
-    case "$(uname -m)" in \
-        x86_64) ARCH="linux-x86_64" ;; \
-        aarch64|arm64) ARCH="linux-arm64" ;; \
-        *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
-    esac; \
-    SEM_TAR="sem-${ARCH}.tar.gz"; \
-    SEM_URL="https://github.com/Ataraxy-Labs/sem/releases/download/${SEM_VER}/${SEM_TAR}"; \
-    wget -q --retry-connrefused --tries=3 --timeout=30 -O "/tmp/${SEM_TAR}" "${SEM_URL}"; \
-    tar -xzf "/tmp/${SEM_TAR}" -C /tmp; \
-    install -m 0755 "/tmp/sem" /usr/local/bin/sem; \
-    /usr/local/bin/sem --version >/dev/null 2>&1 || true; \
-    rm -f "/tmp/${SEM_TAR}" "/tmp/sem"
+        case "$(uname -m)" in \
+            x86_64) arch="${arch_x86}" ;; \
+            aarch64|arm64) arch="${arch_arm64}" ;; \
+            *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
+        esac; \
+        asset="$(printf '%s' "${asset_tpl}" | sed "s/{VER}/${ver}/g; s/{ARCH}/${arch}/g")"; \
+        url="https://github.com/${repo}/releases/download/${ver}/${asset}"; \
+        wget -q --retry-connrefused --tries=3 --timeout=30 -O "/tmp/${asset}" "${url}"; \
+        case "${asset}" in \
+            *.tar.gz) \
+                tar -xzf "/tmp/${asset}" -C /tmp; \
+                install -m 0755 "/tmp/${name}" "/usr/local/bin/${name}"; \
+                rm -f "/tmp/${asset}" "/tmp/${name}" ;; \
+            *) \
+                install -m 0755 "/tmp/${asset}" "/usr/local/bin/${name}"; \
+                rm -f "/tmp/${asset}" ;; \
+        esac; \
+        "/usr/local/bin/${name}" --version >/dev/null 2>&1 || true; \
+    }; \
+    install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
+        "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
+        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu && \
+    install_github_binary "Ataraxy-Labs/sem" "${SEM_VERSION}" \
+        "sem-{ARCH}.tar.gz" sem v0.3.14 \
+        linux-x86_64 linux-arm64
 
 USER agent
