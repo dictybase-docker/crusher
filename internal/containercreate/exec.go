@@ -21,6 +21,20 @@ func Execute(r ResolvedInput) IOE.IOEither[error, ContainerResult] {
 	)
 }
 
+// StartContainer runs the container start command for a created container.
+func StartContainer(result ContainerResult) IOE.IOEither[error, ContainerResult] {
+	return F.Pipe2(
+		CommandSpec{
+			Bin:  containerBinary,
+			Args: []string{"start", result.Name},
+		},
+		runProcess,
+		IOE.Map[error](func(F.Void) ContainerResult {
+			return result
+		}),
+	)
+}
+
 // runProcess executes the container binary with the given CommandSpec.
 func runProcess(spec CommandSpec) IOE.IOEither[error, F.Void] {
 	return F.Pipe2(
@@ -39,7 +53,7 @@ func runProcess(spec CommandSpec) IOE.IOEither[error, F.Void] {
 			})
 		}),
 		IOE.MapLeft[F.Void](func(err error) error {
-			return fmt.Errorf("container create failed: %w", err)
+			return fmt.Errorf("container command failed: %w", err)
 		}),
 	)
 }
