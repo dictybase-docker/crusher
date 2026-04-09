@@ -45,6 +45,7 @@ func buildArgEntries(cmd *cli.Command) R.Entries[string, string] {
 		P.MakePair("CRUSH_VERSION", cmd.String("crush-version")),
 		P.MakePair("GOTESTSUM_VERSION", cmd.String("gotestsum-version")),
 		P.MakePair("MOXIDE_VERSION", cmd.String("moxide-version")),
+		P.MakePair("SEM_VERSION", cmd.String("sem-version")),
 	}
 }
 
@@ -110,6 +111,11 @@ func Command() *cli.Command {
 			&cli.StringFlag{
 				Name:  "moxide-version",
 				Usage: "markdown-oxide version",
+				Value: "latest",
+			},
+			&cli.StringFlag{
+				Name:  "sem-version",
+				Usage: "sem version",
 				Value: "latest",
 			},
 		},
