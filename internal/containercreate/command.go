@@ -92,11 +92,12 @@ func Command() *cli.Command {
 // Pipeline: normalize input → validate input → execute container create → fold into Pair.
 // Printing is outside the pipeline.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	result := F.Pipe5(
+	result := F.Pipe6(
 		InputFromCommand(ctx, cmd),
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
+		IOE.Chain(StartContainer),
 		FP.ToEither[error, ContainerResult],
 		E.Fold(
 			func(err error) P.Pair[error, ContainerResult] {
@@ -120,10 +121,6 @@ func printResult(r ContainerResult) F.Void {
 	nord4.Print("Container ")
 	nord8bold.Printf("%q", r.Name)
 	nord4.Print(" ")
-	nord14.Println("created.")
-
-	nord3.Print("Start it with: ")
-	nord9.Printf("container start %s", r.Name)
-	color.Println()
+	nord14.Println("created and started.")
 	return F.VOID
 }
