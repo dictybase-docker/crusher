@@ -7,6 +7,7 @@ ARG GOLANGCI_LINT_VERSION=2.11.4
 ARG CRUSH_VERSION=latest
 ARG GOTESTSUM_VERSION=latest
 ARG MOXIDE_VERSION=latest
+ARG SEM_VERSION=latest
 
 # Install apt packages: ripgrep, gopls, fd-find, wget
 RUN apt-get update && apt-get install -y \
@@ -65,5 +66,32 @@ RUN set -eux; \
     install -m 0755 "/tmp/${MOX_BIN}" /usr/local/bin/markdown-oxide; \
     /usr/local/bin/markdown-oxide --version >/dev/null 2>&1 || true; \
     rm -f "/tmp/${MOX_BIN}"
+
+# Install sem - Semantic Version Control CLI
+# Uses build argument for version
+RUN set -eux; \
+    SEM_VER="${SEM_VERSION}"; \
+    if [ "${SEM_VER}" = "latest" ]; then \
+        SEM_VER="$(wget -qO- https://api.github.com/repos/Ataraxy-Labs/sem/releases/latest | awk -F\" '/tag_name/ {print $4; exit}')"; \
+        if [ -z "${SEM_VER}" ]; then \
+            echo "failed to resolve sem latest version, falling back" >&2; \
+            SEM_VER="v0.3.14"; \
+        fi; \
+    fi; \
+    if [ "${SEM_VER#v}" = "${SEM_VER}" ]; then \
+        SEM_VER="v${SEM_VER}"; \
+    fi; \
+    case "$(uname -m)" in \
+        x86_64) ARCH="linux-x86_64" ;; \
+        aarch64|arm64) ARCH="linux-arm64" ;; \
+        *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    SEM_TAR="sem-${ARCH}.tar.gz"; \
+    SEM_URL="https://github.com/Ataraxy-Labs/sem/releases/download/${SEM_VER}/${SEM_TAR}"; \
+    wget -q --retry-connrefused --tries=3 --timeout=30 -O "/tmp/${SEM_TAR}" "${SEM_URL}"; \
+    tar -xzf "/tmp/${SEM_TAR}" -C /tmp; \
+    install -m 0755 "/tmp/sem" /usr/local/bin/sem; \
+    /usr/local/bin/sem --version >/dev/null 2>&1 || true; \
+    rm -f "/tmp/${SEM_TAR}" "/tmp/sem"
 
 USER agent
