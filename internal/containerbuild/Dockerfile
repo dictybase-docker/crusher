@@ -1,14 +1,9 @@
 # --- Stage 1: Build sem and sem-mcp from source ---
-FROM rust:1-slim-bookworm AS sem-builder
+FROM rust:1-alpine3.21 AS sem-builder
 
 ARG SEM_VERSION=latest
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    pkg-config \
-    libssl-dev \
-    cmake \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache git pkgconfig openssl-dev cmake musl-dev
 
 RUN set -eux; \
     SEM_VER="${SEM_VERSION}"; \
@@ -25,7 +20,7 @@ RUN set -eux; \
     cargo build --release -p sem-cli -p sem-mcp --manifest-path /build/crates/Cargo.toml
 
 # --- Stage 2: Runtime image ---
-FROM docker/sandbox-templates:shell
+FROM golang:1.25-alpine3.21
 
 USER root
 
@@ -35,21 +30,26 @@ ARG GOTESTSUM_VERSION=latest
 ARG MOXIDE_VERSION=latest
 ARG SEM_VERSION=latest
 
-RUN apt-get update && apt-get install -y \
-    ripgrep \
-    gopls \
-    fd-find \
-    wget \
-    ca-certificates \
-    libssl3 \
-    && rm -rf /var/lib/apt/lists/*
+RUN addgroup -g 1000 agent && \
+    adduser -D -u 1000 -G agent agent
+
+RUN apk add --no-cache ripgrep fd wget ca-certificates openssl
+
+RUN ln -s /usr/bin/fd /usr/local/bin/fd-find
 
 RUN set -eux; \
-    GOLANGCI_DEB="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-arm64.deb"; \
-    GOLANGCI_URL="https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${GOLANGCI_DEB}"; \
-    wget -q "${GOLANGCI_URL}" -O "/tmp/${GOLANGCI_DEB}"; \
-    dpkg -i "/tmp/${GOLANGCI_DEB}"; \
-    rm -f "/tmp/${GOLANGCI_DEB}"
+    case "$(uname -m)" in \
+        x86_64) ARCH="amd64" ;; \
+        aarch64|arm64) ARCH="arm64" ;; \
+        *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    GOLANGCI_TAR="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz"; \
+    GOLANGCI_URL="https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${GOLANGCI_TAR}"; \
+    wget -q "${GOLANGCI_URL}" -O "/tmp/${GOLANGCI_TAR}"; \
+    tar -xzf "/tmp/${GOLANGCI_TAR}" -C /tmp; \
+    install -m 0755 "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}/golangci-lint" /usr/local/bin/golangci-lint; \
+    rm -rf "/tmp/${GOLANGCI_TAR}" "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}"; \
+    golangci-lint --version
 
 RUN CRUSH_VER="${CRUSH_VERSION}"; \
     GOTESTSUM_VER="${GOTESTSUM_VERSION}"; \
@@ -61,6 +61,7 @@ RUN CRUSH_VER="${CRUSH_VERSION}"; \
     fi; \
     GOPATH=/tmp/go go install "github.com/charmbracelet/crush@${CRUSH_VER}" && \
     GOPATH=/tmp/go go install "gotest.tools/gotestsum@${GOTESTSUM_VER}" && \
+    GOPATH=/tmp/go go install "golang.org/x/tools/gopls@latest" && \
     mv /tmp/go/bin/* /usr/local/bin/ && \
     rm -rf /tmp/go
 
@@ -98,7 +99,7 @@ RUN set -eux; \
     }; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
-        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+        x86_64-unknown-linux-musl aarch64-unknown-linux-musl
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
