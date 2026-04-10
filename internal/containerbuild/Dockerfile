@@ -33,7 +33,7 @@ ARG SEM_VERSION=latest
 RUN addgroup -g 1000 agent && \
     adduser -D -u 1000 -G agent agent
 
-RUN apk add --no-cache git ripgrep fd wget ca-certificates openssl gcompat
+RUN apk add --no-cache git ripgrep fd wget ca-certificates openssl gcompat github-cli
 
 RUN ln -s /usr/bin/fd /usr/local/bin/fd-find
 
