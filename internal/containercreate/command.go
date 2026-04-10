@@ -123,7 +123,7 @@ func printResult(r ContainerResult) F.Void {
 	nord14.Println("created and started.")
 
 	nord8.Print("Attach with: ")
-	nord10.Printf("container exec -it %s /bin/bash", r.Name)
+	nord10.Printf("container exec -it %s /bin/sh", r.Name)
 	color.Println()
 	return F.VOID
 }
