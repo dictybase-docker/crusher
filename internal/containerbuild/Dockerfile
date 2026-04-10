@@ -3,7 +3,7 @@ FROM rust:1-alpine3.21 AS sem-builder
 
 ARG SEM_VERSION=latest
 
-RUN apk add --no-cache git pkgconfig openssl-dev cmake musl-dev
+RUN apk add --no-cache git pkgconfig openssl-dev openssl-libs-static cmake musl-dev
 
 RUN set -eux; \
     SEM_VER="${SEM_VERSION}"; \
@@ -33,7 +33,7 @@ ARG SEM_VERSION=latest
 RUN addgroup -g 1000 agent && \
     adduser -D -u 1000 -G agent agent
 
-RUN apk add --no-cache ripgrep fd wget ca-certificates openssl
+RUN apk add --no-cache git ripgrep fd wget ca-certificates openssl gcompat
 
 RUN ln -s /usr/bin/fd /usr/local/bin/fd-find
 
@@ -59,7 +59,7 @@ RUN CRUSH_VER="${CRUSH_VERSION}"; \
     if [ "${GOTESTSUM_VER}" != "latest" ] && [ "${GOTESTSUM_VER#v}" = "${GOTESTSUM_VER}" ]; then \
         GOTESTSUM_VER="v${GOTESTSUM_VER}"; \
     fi; \
-    GOPATH=/tmp/go go install "github.com/charmbracelet/crush@${CRUSH_VER}" && \
+    GOPATH=/tmp/go GOTOOLCHAIN=auto go install "github.com/charmbracelet/crush@${CRUSH_VER}" && \
     GOPATH=/tmp/go go install "gotest.tools/gotestsum@${GOTESTSUM_VER}" && \
     GOPATH=/tmp/go go install "golang.org/x/tools/gopls@latest" && \
     mv /tmp/go/bin/* /usr/local/bin/ && \
@@ -99,7 +99,7 @@ RUN set -eux; \
     }; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
-        x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
