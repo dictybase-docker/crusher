@@ -1,5 +1,5 @@
 // Package containerbuild implements the "build" subcommand, which builds an OCI
-// image using the container CLI.
+// image using the docker CLI.
 package containerbuild
 
 import (
@@ -69,7 +69,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 func Command() *cli.Command {
 	return &cli.Command{
 		Name:  "build",
-		Usage: "Build an OCI image via the container CLI",
+		Usage: "Build an OCI image via the docker CLI",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "file",
