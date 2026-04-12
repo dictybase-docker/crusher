@@ -12,8 +12,8 @@ import (
 
 func main() {
 	app := &cli.Command{
-		Name:  "container-cli",
-		Usage: "Build OCI images through the container CLI",
+		Name:  "crusher",
+		Usage: "Build OCI images through the docker CLI",
 		Commands: []*cli.Command{
 			containerbuild.Command(),
 			containercreate.Command(),
