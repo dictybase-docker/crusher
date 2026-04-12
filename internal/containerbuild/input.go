@@ -6,7 +6,7 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 )
 
-const containerBinary = "container"
+const containerBinary = "docker"
 
 // Input holds the build parameters throughout the pipeline.
 // DockerfileSource is a lazy IOEither that resolves to a DockerfileResource
