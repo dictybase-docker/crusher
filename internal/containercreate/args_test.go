@@ -21,7 +21,7 @@ func TestRenderCommand_MinimalInput(t *testing.T) {
 
 	spec := RenderCommand(resolved)
 
-	require.Equal("container", spec.Bin)
+	require.Equal("docker", spec.Bin)
 	require.Equal("create", spec.Args[0])
 	require.Contains(spec.Args, "--name")
 	require.Contains(spec.Args, "test-container")
