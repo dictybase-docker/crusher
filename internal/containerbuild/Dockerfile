@@ -105,4 +105,7 @@ COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
 
 USER agent
+
+ENV CRUSH_SHORT_TOOL_DESCRIPTIONS=1
+
 RUN sem setup
