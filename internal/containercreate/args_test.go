@@ -107,6 +107,46 @@ func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 	require.Contains(spec.Args, "OPENROUTER_API_KEY=test-key")
 }
 
+func TestRenderCommand_GitHubTokenPresent(t *testing.T) {
+	require := require.New(t)
+	resolved := ResolvedInput{
+		ImageName:     "crusher:latest",
+		ContainerName: "test-container",
+		Mounts: []MountSpec{
+			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+		},
+		Workdir:     "",
+		APIKey:      "test-key",
+		GitHubToken: "ghp_abc123",
+	}
+
+	spec := RenderCommand(resolved)
+
+	require.Contains(spec.Args, "GITHUB_TOKEN=ghp_abc123")
+}
+
+func TestRenderCommand_GitHubTokenOmitted(t *testing.T) {
+	require := require.New(t)
+	resolved := ResolvedInput{
+		ImageName:     "crusher:latest",
+		ContainerName: "test-container",
+		Mounts: []MountSpec{
+			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+		},
+		Workdir:     "",
+		APIKey:      "test-key",
+		GitHubToken: "",
+	}
+
+	spec := RenderCommand(resolved)
+
+	for _, arg := range spec.Args {
+		require.NotContains(arg, "GITHUB_TOKEN")
+	}
+}
+
 func TestRenderCommand_AlwaysHasInteractiveAndTTY(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{

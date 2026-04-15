@@ -73,7 +73,7 @@ func TestRenderAllMounts_EmptyMounts(t *testing.T) {
 func TestRenderEnvVars_ContainsAllEnvVars(t *testing.T) {
 	require := require.New(t)
 
-	result := renderEnvVars("test-api-key-123")
+	result := renderEnvVars("test-api-key-123", "")
 
 	require.Len(result, 6)
 	require.Equal("--env", result[0])
@@ -82,6 +82,28 @@ func TestRenderEnvVars_ContainsAllEnvVars(t *testing.T) {
 	require.Contains(result[3], "CRUSH_GLOBAL_DATA="+DataTarget)
 	require.Equal("--env", result[4])
 	require.Contains(result[5], "OPENROUTER_API_KEY=test-api-key-123")
+}
+
+func TestRenderEnvVars_WithGitHubToken(t *testing.T) {
+	require := require.New(t)
+
+	result := renderEnvVars("test-api-key-123", "ghp_abc123")
+
+	require.Len(result, 8)
+	require.Contains(result[5], "OPENROUTER_API_KEY=test-api-key-123")
+	require.Equal("--env", result[6])
+	require.Contains(result[7], "GITHUB_TOKEN=ghp_abc123")
+}
+
+func TestRenderEnvVars_WithoutGitHubToken(t *testing.T) {
+	require := require.New(t)
+
+	result := renderEnvVars("test-api-key-123", "")
+
+	require.Len(result, 6)
+	for _, arg := range result {
+		require.NotContains(arg, "GITHUB_TOKEN")
+	}
 }
 
 func TestRenderMount_SpecialCharacters(t *testing.T) {
