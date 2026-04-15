@@ -109,4 +109,5 @@ USER agent
 ENV CRUSH_SHORT_TOOL_DESCRIPTIONS=1
 ENV PATH="/home/agent/.local/bin:${PATH}"
 
-RUN sem setup
+RUN sem setup && \
+    sed -i 's|exec sem diff|exec sem diff --verbose|' /home/agent/.local/bin/sem-diff-wrapper
