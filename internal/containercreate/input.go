@@ -45,6 +45,7 @@ type Input struct {
 	ConfigPath    string   // Host path to Crush config directory (required)
 	DataPath      string   // Host path to Crush data directory (required)
 	APIKey        string   // API key for Crush (required)
+	GitHubToken   string   // GitHub personal access token (optional)
 	WorkspacePath string   // Host path to workspace (optional)
 	Volumes       []string // Additional host paths to mount (read-only)
 	Ctx           context.Context
@@ -57,6 +58,7 @@ type ResolvedInput struct {
 	Mounts        []MountSpec
 	Workdir       string // Working directory inside container (empty if no workspace)
 	APIKey        string
+	GitHubToken   string
 }
 
 // ContainerResult holds the result of a successful container creation.

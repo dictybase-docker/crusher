@@ -78,9 +78,10 @@ func NormalizeInput(input Input) Input {
 		),
 		ConfigPath: input.ConfigPath,
 		DataPath:   input.DataPath,
-		APIKey:     input.APIKey,
-		Volumes:    input.Volumes,
-		Ctx:        input.Ctx,
+		APIKey:      input.APIKey,
+		GitHubToken: input.GitHubToken,
+		Volumes:     input.Volumes,
+		Ctx:         input.Ctx,
 	}
 }
 
@@ -114,6 +115,7 @@ func resolveConfigPath(input Input) E.Either[error, Input] {
 				ConfigPath:    p,
 				DataPath:      input.DataPath,
 				APIKey:        input.APIKey,
+				GitHubToken:   input.GitHubToken,
 				WorkspacePath: input.WorkspacePath,
 				Volumes:       input.Volumes,
 				Ctx:           input.Ctx,
@@ -134,6 +136,7 @@ func resolveDataPath(input Input) E.Either[error, Input] {
 				ConfigPath:    input.ConfigPath,
 				DataPath:      p,
 				APIKey:        input.APIKey,
+				GitHubToken:   input.GitHubToken,
 				WorkspacePath: input.WorkspacePath,
 				Volumes:       input.Volumes,
 				Ctx:           input.Ctx,
@@ -153,6 +156,7 @@ func resolveWorkspace(input Input) E.Either[error, Input] {
 				ConfigPath:    input.ConfigPath,
 				DataPath:      input.DataPath,
 				APIKey:        input.APIKey,
+				GitHubToken:   input.GitHubToken,
 				WorkspacePath: workspace,
 				Volumes:       input.Volumes,
 				Ctx:           input.Ctx,
@@ -181,6 +185,7 @@ func validateVolumes(input Input) E.Either[error, Input] {
 							ConfigPath:    input.ConfigPath,
 							DataPath:      input.DataPath,
 							APIKey:        input.APIKey,
+							GitHubToken:   input.GitHubToken,
 							WorkspacePath: input.WorkspacePath,
 							Volumes:       volumes,
 							Ctx:           input.Ctx,
@@ -280,6 +285,7 @@ func buildResolvedInput(input Input) ResolvedInput {
 				Mounts:        mspec,
 				Workdir:       WorkspaceTarget,
 				APIKey:        input.APIKey,
+				GitHubToken:   input.GitHubToken,
 			}
 		},
 	)

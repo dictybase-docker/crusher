@@ -19,7 +19,7 @@ func RenderCommand(rinput ResolvedInput) CommandSpec {
 			rinput.Mounts,
 			A.Chain(renderMount),
 		)),
-		A.Concat(renderEnvVars(rinput.APIKey)),
+		A.Concat(renderEnvVars(rinput.APIKey, rinput.GitHubToken)),
 		A.Concat([]string{"--workdir", rinput.Workdir}),
 		A.Concat([]string{"--dns", "8.8.8.8"}),
 		A.Concat([]string{"--interactive", "--tty"}),

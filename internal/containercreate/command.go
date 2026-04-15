@@ -32,6 +32,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		ConfigPath:    cmd.String("config"),
 		DataPath:      cmd.String("data"),
 		APIKey:        cmd.String("api-key"),
+		GitHubToken:   cmd.String("github-token"),
 		WorkspacePath: cmd.String("workspace"),
 		Volumes:       cmd.StringSlice("volume"),
 	}
@@ -77,7 +78,12 @@ func Command() *cli.Command {
 				Aliases: []string{"w"},
 				Usage:   "Host path to workspace directory, current directory by default",
 			},
-			&cli.StringSliceFlag{
+			&cli.StringFlag{
+			Name:    "github-token",
+			Aliases: []string{"g"},
+			Usage:   "GitHub personal access token",
+		},
+		&cli.StringSliceFlag{
 				Name:    "volume",
 				Aliases: []string{"v"},
 				Usage:   "Additional host path to mount (read-only, repeatable)",
