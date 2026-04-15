@@ -107,5 +107,6 @@ COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-
 USER agent
 
 ENV CRUSH_SHORT_TOOL_DESCRIPTIONS=1
+ENV PATH="/home/agent/.local/bin:${PATH}"
 
 RUN sem setup
