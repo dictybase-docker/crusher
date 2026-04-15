@@ -79,11 +79,11 @@ func Command() *cli.Command {
 				Usage:   "Host path to workspace directory, current directory by default",
 			},
 			&cli.StringFlag{
-			Name:    "github-token",
-			Aliases: []string{"g"},
-			Usage:   "GitHub personal access token",
-		},
-		&cli.StringSliceFlag{
+				Name:    "github-token",
+				Aliases: []string{"g"},
+				Usage:   "GitHub personal access token",
+			},
+			&cli.StringSliceFlag{
 				Name:    "volume",
 				Aliases: []string{"v"},
 				Usage:   "Additional host path to mount (read-only, repeatable)",
