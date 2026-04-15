@@ -32,10 +32,21 @@ func renderMount(mount MountSpec) []string {
 }
 
 // renderEnvVars returns the environment variable arguments for Crush.
-func renderEnvVars(apiKey string) []string {
-	return []string{
+func renderEnvVars(apiKey string, githubToken string) []string {
+	base := []string{
 		"--env", fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
 		"--env", fmt.Sprintf("CRUSH_GLOBAL_DATA=%s", DataTarget),
 		"--env", fmt.Sprintf("OPENROUTER_API_KEY=%s", apiKey),
 	}
+
+	return F.Pipe2(
+		githubToken,
+		O.FromPredicate(func(s string) bool { return s != "" }),
+		O.Fold(
+			func() []string { return base },
+			func(token string) []string {
+				return append(base, "--env", fmt.Sprintf("GITHUB_TOKEN=%s", token))
+			},
+		),
+	)
 }
