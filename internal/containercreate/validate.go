@@ -45,7 +45,7 @@ var (
 // isReservedBasename checks if basename is reserved.
 func isReservedBasename(basename string) bool {
 	return F.Pipe2(
-		A.From("config", "data", "crush"),
+		A.From("config", "data", "skills", "crush"),
 		A.FindFirst(func(s string) bool {
 			return EqString.Equals(s, basename)
 		}),
@@ -78,6 +78,7 @@ func NormalizeInput(input Input) Input {
 		),
 		ConfigPath:  input.ConfigPath,
 		DataPath:    input.DataPath,
+		SkillsPath:  input.SkillsPath,
 		APIKey:      input.APIKey,
 		GitHubToken: input.GitHubToken,
 		Volumes:     input.Volumes,
@@ -92,11 +93,12 @@ func NormalizeInput(input Input) Input {
 // ValidateInput normalizes defaults, validates paths, and resolves to absolute form.
 // Returns Either[error, ResolvedInput].
 func ValidateInput(input Input) E.Either[error, ResolvedInput] {
-	return F.Pipe6(
+	return F.Pipe7(
 		E.Of[error](input),
 		E.Map[error](NormalizeInput),
 		E.Chain(resolveConfigPath),
 		E.Chain(resolveDataPath),
+		E.Chain(resolveSkillsPath),
 		E.Chain(resolveWorkspace),
 		E.Chain(validateVolumes),
 		E.Map[error](buildResolvedInput),
@@ -114,6 +116,7 @@ func resolveConfigPath(input Input) E.Either[error, Input] {
 				ContainerName: input.ContainerName,
 				ConfigPath:    p,
 				DataPath:      input.DataPath,
+				SkillsPath:    input.SkillsPath,
 				APIKey:        input.APIKey,
 				GitHubToken:   input.GitHubToken,
 				WorkspacePath: input.WorkspacePath,
@@ -135,6 +138,29 @@ func resolveDataPath(input Input) E.Either[error, Input] {
 				ContainerName: input.ContainerName,
 				ConfigPath:    input.ConfigPath,
 				DataPath:      p,
+				SkillsPath:    input.SkillsPath,
+				APIKey:        input.APIKey,
+				GitHubToken:   input.GitHubToken,
+				WorkspacePath: input.WorkspacePath,
+				Volumes:       input.Volumes,
+				Ctx:           input.Ctx,
+			}
+		}),
+	)
+}
+
+// resolveSkillsPath resolves the skills path to absolute.
+func resolveSkillsPath(input Input) E.Either[error, Input] {
+	return F.Pipe2(
+		input.SkillsPath,
+		resolveAbsolutePath,
+		E.Map[error](func(skpath string) Input {
+			return Input{
+				ImageName:     input.ImageName,
+				ContainerName: input.ContainerName,
+				ConfigPath:    input.ConfigPath,
+				DataPath:      input.DataPath,
+				SkillsPath:    skpath,
 				APIKey:        input.APIKey,
 				GitHubToken:   input.GitHubToken,
 				WorkspacePath: input.WorkspacePath,
@@ -155,6 +181,7 @@ func resolveWorkspace(input Input) E.Either[error, Input] {
 				ContainerName: input.ContainerName,
 				ConfigPath:    input.ConfigPath,
 				DataPath:      input.DataPath,
+				SkillsPath:    input.SkillsPath,
 				APIKey:        input.APIKey,
 				GitHubToken:   input.GitHubToken,
 				WorkspacePath: workspace,
@@ -184,6 +211,7 @@ func validateVolumes(input Input) E.Either[error, Input] {
 							ContainerName: input.ContainerName,
 							ConfigPath:    input.ConfigPath,
 							DataPath:      input.DataPath,
+							SkillsPath:    input.SkillsPath,
 							APIKey:        input.APIKey,
 							GitHubToken:   input.GitHubToken,
 							WorkspacePath: input.WorkspacePath,
@@ -254,7 +282,7 @@ func resolveAbsolutePath(path string) E.Either[error, string] {
 // ============================================================================
 
 func buildResolvedInput(input Input) ResolvedInput {
-	return F.Pipe5(
+	return F.Pipe6(
 		input.Volumes,
 		A.Map(func(vol string) MountSpec {
 			return MountSpec{
@@ -272,6 +300,11 @@ func buildResolvedInput(input Input) ResolvedInput {
 			HostPath:   input.DataPath,
 			TargetPath: DataTarget,
 			Readonly:   false,
+		}),
+		A.Push(MountSpec{
+			HostPath:   input.SkillsPath,
+			TargetPath: SkillsTarget,
+			Readonly:   true,
 		}),
 		A.Push(MountSpec{
 			HostPath:   input.WorkspacePath,
