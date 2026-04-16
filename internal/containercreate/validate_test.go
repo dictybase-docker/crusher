@@ -13,10 +13,12 @@ func TestValidateInput_ValidMinimalInput(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 	}
 
 	result := F.Pipe2(
@@ -34,17 +36,19 @@ func TestValidateInput_ValidMinimalInput(t *testing.T) {
 	require.NotEmpty(resolved.ContainerName)
 	require.NotEmpty(resolved.ImageName)
 	require.NotEmpty(resolved.Workdir, "workspace defaults to current directory")
-	require.Len(resolved.Mounts, 3)
+	require.Len(resolved.Mounts, 4)
 }
 
 func TestValidateInput_ValidContainerName(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath:    configDir,
 		DataPath:      dataDir,
+		SkillsPath:    skillsDir,
 		ContainerName: "my-container_123",
 	}
 
@@ -67,6 +71,7 @@ func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 	parent := t.TempDir()
 	reservedDir := parent + "/config"
 	require.NoError(os.MkdirAll(reservedDir, 0o755))
@@ -74,6 +79,7 @@ func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 		Volumes:    []string{reservedDir},
 	}
 
@@ -97,12 +103,14 @@ func TestValidateInput_ValidVolume(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 	volDir := t.TempDir()
 	require.NoError(os.MkdirAll(volDir, 0o755))
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 		Volumes:    []string{volDir},
 	}
 
@@ -118,17 +126,19 @@ func TestValidateInput_ValidVolume(t *testing.T) {
 		result,
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
-	require.Len(resolved.Mounts, 4)
+	require.Len(resolved.Mounts, 5)
 }
 
 func TestValidateInput_WorkspaceDefaultsToCurrentDir(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath:    configDir,
 		DataPath:      dataDir,
+		SkillsPath:    skillsDir,
 		WorkspacePath: "",
 	}
 
@@ -145,17 +155,19 @@ func TestValidateInput_WorkspaceDefaultsToCurrentDir(t *testing.T) {
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
 	require.NotEmpty(resolved.Workdir)
-	require.Len(resolved.Mounts, 3)
+	require.Len(resolved.Mounts, 4)
 }
 
 func TestValidateInput_DefaultImageName(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 		ImageName:  "",
 	}
 
@@ -178,11 +190,13 @@ func TestValidateInput_CustomWorkspace(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 	workspaceDir := t.TempDir()
 
 	input := Input{
 		ConfigPath:    configDir,
 		DataPath:      dataDir,
+		SkillsPath:    skillsDir,
 		WorkspacePath: workspaceDir,
 	}
 
@@ -199,17 +213,19 @@ func TestValidateInput_CustomWorkspace(t *testing.T) {
 		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
 	)
 	require.NotEmpty(resolved.Workdir)
-	require.Len(resolved.Mounts, 3)
+	require.Len(resolved.Mounts, 4)
 }
 
 func TestValidateInput_CustomImageName(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 		ImageName:  "custom:v1.0",
 	}
 
@@ -236,6 +252,7 @@ func TestIsReservedBasename(t *testing.T) {
 	}{
 		{"config is reserved", "config", true},
 		{"data is reserved", "data", true},
+		{"skills is reserved", "skills", true},
 		{"crush is reserved", "crush", true},
 		{"project is not reserved", "project", false},
 		{"workspace is not reserved", "workspace", false},

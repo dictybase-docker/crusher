@@ -75,13 +75,15 @@ func TestRenderEnvVars_ContainsAllEnvVars(t *testing.T) {
 
 	result := renderEnvVars("test-api-key-123", "")
 
-	require.Len(result, 6)
+	require.Len(result, 8)
 	require.Equal("--env", result[0])
 	require.Contains(result[1], "CRUSH_GLOBAL_CONFIG="+ConfigTarget)
 	require.Equal("--env", result[2])
 	require.Contains(result[3], "CRUSH_GLOBAL_DATA="+DataTarget)
 	require.Equal("--env", result[4])
-	require.Contains(result[5], "OPENROUTER_API_KEY=test-api-key-123")
+	require.Contains(result[5], "CRUSH_SKILLS_DIR="+SkillsTarget)
+	require.Equal("--env", result[6])
+	require.Contains(result[7], "OPENROUTER_API_KEY=test-api-key-123")
 }
 
 func TestRenderEnvVars_WithGitHubToken(t *testing.T) {
@@ -89,10 +91,10 @@ func TestRenderEnvVars_WithGitHubToken(t *testing.T) {
 
 	result := renderEnvVars("test-api-key-123", "ghp_abc123")
 
-	require.Len(result, 8)
-	require.Contains(result[5], "OPENROUTER_API_KEY=test-api-key-123")
-	require.Equal("--env", result[6])
-	require.Contains(result[7], "GITHUB_TOKEN=ghp_abc123")
+	require.Len(result, 10)
+	require.Contains(result[7], "OPENROUTER_API_KEY=test-api-key-123")
+	require.Equal("--env", result[8])
+	require.Contains(result[9], "GITHUB_TOKEN=ghp_abc123")
 }
 
 func TestRenderEnvVars_WithoutGitHubToken(t *testing.T) {
@@ -100,7 +102,7 @@ func TestRenderEnvVars_WithoutGitHubToken(t *testing.T) {
 
 	result := renderEnvVars("test-api-key-123", "")
 
-	require.Len(result, 6)
+	require.Len(result, 8)
 	for _, arg := range result {
 		require.NotContains(arg, "GITHUB_TOKEN")
 	}
@@ -126,10 +128,12 @@ func TestConfigMount_IsReadwrite(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 	}
 
 	result := F.Pipe2(
@@ -160,10 +164,12 @@ func TestDataMount_IsReadwrite(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 	}
 
 	result := F.Pipe2(
@@ -190,10 +196,47 @@ func TestDataMount_IsReadwrite(t *testing.T) {
 	require.False(dataMount.Readonly, "data mount should be read-write")
 }
 
+func TestSkillsMount_IsReadonly(t *testing.T) {
+	require := require.New(t)
+	configDir := t.TempDir()
+	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
+
+	input := Input{
+		ConfigPath: configDir,
+		DataPath:   dataDir,
+		SkillsPath: skillsDir,
+	}
+
+	result := F.Pipe2(
+		input,
+		NormalizeInput,
+		ValidateInput,
+	)
+	require.True(E.IsRight(result))
+
+	resolved := F.Pipe1(
+		result,
+		E.Fold(func(error) ResolvedInput { return ResolvedInput{} }, F.Identity[ResolvedInput]),
+	)
+
+	var skillsMount *MountSpec
+	for i := range resolved.Mounts {
+		if resolved.Mounts[i].TargetPath == SkillsTarget {
+			skillsMount = &resolved.Mounts[i]
+			break
+		}
+	}
+
+	require.NotNil(skillsMount, "skills mount should exist")
+	require.True(skillsMount.Readonly, "skills mount should be read-only")
+}
+
 func TestAdditionalVolume_IsReadonly(t *testing.T) {
 	require := require.New(t)
 	configDir := t.TempDir()
 	dataDir := t.TempDir()
+	skillsDir := t.TempDir()
 	parent := t.TempDir()
 	volDir := parent + "/myproject"
 	require.NoError(os.MkdirAll(volDir, 0o755))
@@ -201,6 +244,7 @@ func TestAdditionalVolume_IsReadonly(t *testing.T) {
 	input := Input{
 		ConfigPath: configDir,
 		DataPath:   dataDir,
+		SkillsPath: skillsDir,
 		Volumes:    []string{volDir},
 	}
 
