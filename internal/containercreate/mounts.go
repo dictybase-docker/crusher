@@ -36,6 +36,7 @@ func renderEnvVars(apiKey string, githubToken string) []string {
 	base := []string{
 		"--env", fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
 		"--env", fmt.Sprintf("CRUSH_GLOBAL_DATA=%s", DataTarget),
+		"--env", fmt.Sprintf("CRUSH_SKILLS_DIR=%s", SkillsTarget),
 		"--env", fmt.Sprintf("OPENROUTER_API_KEY=%s", apiKey),
 	}
 
