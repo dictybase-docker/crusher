@@ -27,6 +27,9 @@ var (
 	// DataTarget is the data mount target inside the container.
 	DataTarget = pathJoin.Concat(ContainerHome, "crush/data")
 
+	// SkillsTarget is the skills mount target inside the container.
+	SkillsTarget = pathJoin.Concat(ContainerHome, "crush/skills")
+
 	// WorkspaceTarget is the workspace mount target inside the container.
 	WorkspaceTarget = pathJoin.Concat(ContainerHome, "workspace")
 )
@@ -44,6 +47,7 @@ type Input struct {
 	ContainerName string   // Container name (empty = auto-generate)
 	ConfigPath    string   // Host path to Crush config directory (required)
 	DataPath      string   // Host path to Crush data directory (required)
+	SkillsPath    string   // Host path to Crush skills directory (required)
 	APIKey        string   // API key for Crush (required)
 	GitHubToken   string   // GitHub personal access token (optional)
 	WorkspacePath string   // Host path to workspace (optional)
