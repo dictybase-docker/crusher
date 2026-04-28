@@ -46,6 +46,7 @@ func buildArgEntries(cmd *cli.Command) R.Entries[string, string] {
 		P.MakePair("GOTESTSUM_VERSION", cmd.String("gotestsum-version")),
 		P.MakePair("MOXIDE_VERSION", cmd.String("moxide-version")),
 		P.MakePair("SEM_VERSION", cmd.String("sem-version")),
+		P.MakePair("RTK_VERSION", cmd.String("rtk-version")),
 	}
 }
 
@@ -116,6 +117,11 @@ func Command() *cli.Command {
 			&cli.StringFlag{
 				Name:  "sem-version",
 				Usage: "sem version",
+				Value: "latest",
+			},
+			&cli.StringFlag{
+				Name:  "rtk-version",
+				Usage: "rtk version",
 				Value: "latest",
 			},
 		},

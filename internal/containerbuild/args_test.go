@@ -125,6 +125,7 @@ func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
 			"CRUSH_VERSION":         "latest",
 			"GOTESTSUM_VERSION":     "latest",
 			"MOXIDE_VERSION":        "latest",
+			"RTK_VERSION":           "latest",
 			"SEM_VERSION":           "latest",
 		},
 	}
@@ -138,12 +139,13 @@ func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
 		}
 	}
 
-	require.Len(buildArgValues, 5)
+	require.Len(buildArgValues, 6)
 	require.Equal("CRUSH_VERSION=latest", buildArgValues[0])
 	require.Equal("GOLANGCI_LINT_VERSION=2.11.4", buildArgValues[1])
 	require.Equal("GOTESTSUM_VERSION=latest", buildArgValues[2])
 	require.Equal("MOXIDE_VERSION=latest", buildArgValues[3])
-	require.Equal("SEM_VERSION=latest", buildArgValues[4])
+	require.Equal("RTK_VERSION=latest", buildArgValues[4])
+	require.Equal("SEM_VERSION=latest", buildArgValues[5])
 }
 
 func TestRenderCommand_BuildArgs_Position(t *testing.T) {

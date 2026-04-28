@@ -29,6 +29,7 @@ ARG CRUSH_VERSION=latest
 ARG GOTESTSUM_VERSION=latest
 ARG MOXIDE_VERSION=latest
 ARG SEM_VERSION=latest
+ARG RTK_VERSION=latest
 
 RUN addgroup -g 1000 agent && \
     adduser -D -u 1000 -G agent agent
@@ -99,7 +100,10 @@ RUN set -eux; \
     }; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
-        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; \
+    install_github_binary "rtk-ai/rtk" "${RTK_VERSION}" \
+        "rtk-{ARCH}.tar.gz" rtk v0.37.2 \
+        x86_64-unknown-linux-musl aarch64-unknown-linux-gnu
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
