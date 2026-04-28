@@ -115,7 +115,7 @@ RUN set -eux; \
     }; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
-        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; \
+        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
