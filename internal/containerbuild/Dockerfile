@@ -1,7 +1,8 @@
-# --- Stage 1: Build sem and sem-mcp from source ---
+# --- Stage 1: Build sem, sem-mcp, and rtk from source ---
 FROM rust:1-alpine3.21 AS sem-builder
 
 ARG SEM_VERSION=latest
+ARG RTK_VERSION=latest
 
 RUN apk add --no-cache git pkgconfig openssl-dev openssl-libs-static cmake musl-dev
 
@@ -18,6 +19,20 @@ RUN set -eux; \
     fi; \
     git clone --branch "${SEM_VER}" --depth 1 https://github.com/Ataraxy-Labs/sem.git /build && \
     cargo build --release -p sem-cli -p sem-mcp --manifest-path /build/crates/Cargo.toml
+
+RUN set -eux; \
+    RTK_VER="${RTK_VERSION}"; \
+    if [ "${RTK_VER}" = "latest" ]; then \
+        RTK_VER="$(git ls-remote --tags --sort=-v:refname https://github.com/rtk-ai/rtk.git | head -n1 | sed 's/.*refs\/tags\///')"; \
+        if [ -z "${RTK_VER}" ]; then \
+            echo "failed to resolve rtk latest version" >&2; exit 1; \
+        fi; \
+    fi; \
+    if [ "${RTK_VER#v}" = "${RTK_VER}" ]; then \
+        RTK_VER="v${RTK_VER}"; \
+    fi; \
+    git clone --branch "${RTK_VER}" --depth 1 https://github.com/rtk-ai/rtk.git /rtk-build && \
+    cargo build --release --manifest-path /rtk-build/Cargo.toml
 
 # --- Stage 2: Runtime image ---
 FROM golang:1.25-alpine3.21
@@ -101,12 +116,11 @@ RUN set -eux; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
         x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; \
-    install_github_binary "rtk-ai/rtk" "${RTK_VERSION}" \
-        "rtk-{ARCH}.tar.gz" rtk v0.37.2 \
-        x86_64-unknown-linux-musl aarch64-unknown-linux-gnu
+
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
+COPY --from=sem-builder /rtk-build/target/release/rtk /usr/local/bin/rtk
 
 USER agent
 
