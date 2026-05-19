@@ -77,7 +77,7 @@ RUN CRUSH_VER="${CRUSH_VERSION}"; \
     fi; \
     GOPATH=/tmp/go GOTOOLCHAIN=auto go install "github.com/charmbracelet/crush@${CRUSH_VER}" && \
     GOPATH=/tmp/go go install "gotest.tools/gotestsum@${GOTESTSUM_VER}" && \
-    GOPATH=/tmp/go go install "golang.org/x/tools/gopls@latest" && \
+    GOPATH=/tmp/go GOTOOLCHAIN=auto go install "golang.org/x/tools/gopls@latest" && \
     mv /tmp/go/bin/* /usr/local/bin/ && \
     rm -rf /tmp/go
 
