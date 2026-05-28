@@ -1,0 +1,172 @@
+schemaVersion: "1"
+kind: agent
+name: crush
+displayName: {{.KitName}}
+description: Charmbracelet Crush — agentic coding with OpenRouter
+
+agent:
+  image: "docker/sandbox-templates:shell-docker"
+  aiFilename: AGENTS.md
+  persistence: persistent
+  entrypoint:
+    run: [crush]
+
+# ── Install tools ───────────────────────────────────────────
+commands:
+  install:
+    # System packages
+    - command: |
+        sudo apt-get update && sudo apt-get install -y \
+          git ripgrep fd-find wget ca-certificates gh 2>&1
+      user: "root"
+      description: "Install system dev utilities"
+
+    # Go toolchain (required for go install)
+    - command: |
+        wget -q https://go.dev/dl/go{{.GoVersion}}.linux-amd64.tar.gz -O /tmp/go.tar.gz &&
+        sudo tar -C /usr/local -xzf /tmp/go.tar.gz &&
+        rm /tmp/go.tar.gz &&
+        echo 'export PATH="/usr/local/go/bin:$PATH"' >> /home/agent/.profile
+      user: "root"
+      description: "Install Go toolchain"
+
+    # Crush, gotestsum, gopls (via go install)
+    - command: |
+        export PATH="/usr/local/go/bin:$PATH" &&
+        GOPATH=/tmp/go GOTOOLCHAIN=auto go install github.com/charmbracelet/crush@{{.CrushVersion}} &&
+        GOPATH=/tmp/go go install gotest.tools/gotestsum@{{.GotestsumVersion}} &&
+        GOPATH=/tmp/go GOTOOLCHAIN=auto go install golang.org/x/tools/gopls@latest &&
+        sudo mv /tmp/go/bin/* /usr/local/bin/ &&
+        rm -rf /tmp/go
+      user: "root"
+      description: "Install Crush, gotestsum, and gopls"
+
+    # golangci-lint
+    - command: |
+        GOLANGCI_LINT_VERSION="{{.GolangciLintVersion}}" &&
+        ARCH=$(dpkg --print-architecture | sed 's/amd64/amd64/;s/arm64/arm64/') &&
+        TAR="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}.tar.gz" &&
+        wget -q "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${TAR}" -O "/tmp/${TAR}" &&
+        tar -xzf "/tmp/${TAR}" -C /tmp &&
+        sudo install -m 0755 "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}/golangci-lint" /usr/local/bin/golangci-lint &&
+        rm -rf "/tmp/${TAR}" "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-${ARCH}"
+      user: "root"
+      description: "Install golangci-lint"
+
+    # markdown-oxide, sem, rtk (pre-built GitHub releases)
+    - command: |
+        set -eux; \
+        install_github_binary() { \
+          repo=$1; ver=$2; asset_tpl=$3; name=$4; arch_sed=$5; \
+          real_ver="$(wget -qO- "https://api.github.com/repos/${repo}/releases/latest" | awk -F\" '/tag_name/ {print $4; exit}')"; \
+          arch="$(uname -m | ${arch_sed})"; \
+          asset="$(printf '%s' "${asset_tpl}" | sed "s/{VER}/${real_ver}/g; s/{ARCH}/${arch}/g")"; \
+          url="https://github.com/${repo}/releases/download/${real_ver}/${asset}"; \
+          wget -q "${url}" -O "/tmp/${asset}"; \
+          case "${asset}" in \
+            *.tar.gz) tar -xzf "/tmp/${asset}" -C /tmp && sudo install -m 0755 "/tmp/${name}" "/usr/local/bin/${name}" && rm -f "/tmp/${name}" ;; \
+            *) sudo install -m 0755 "/tmp/${asset}" "/usr/local/bin/${name}" ;; \
+          esac; \
+          rm -f "/tmp/${asset}"; \
+        }; \
+        install_github_binary "Feel-ix-343/markdown-oxide" "{{.MoxideVersion}}" \
+          "markdown-oxide-{VER}-{ARCH}" markdown-oxide \
+          "sed 's/x86_64/x86_64-unknown-linux-gnu/;s/aarch64/aarch64-unknown-linux-gnu/'"; \
+        install_github_binary "Ataraxy-Labs/sem" "{{.SemVersion}}" \
+          "sem-linux-{ARCH}.tar.gz" sem \
+          "sed 's/x86_64/x86_64/;s/aarch64/arm64/'"; \
+        install_github_binary "rtk-ai/rtk" "{{.RtkVersion}}" \
+          "rtk-{ARCH}.tar.gz" rtk \
+          "sed 's/x86_64/x86_64-unknown-linux-musl/;s/aarch64/aarch64-unknown-linux-gnu/'" && \
+        sudo ln -sf /usr/local/bin/sem /usr/local/bin/sem-mcp
+      user: "root"
+      description: "Install markdown-oxide, sem, sem-mcp, and rtk"
+
+    # Link fd → fd-find (ripgrep compatibility)
+    - command: "sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd-find && sudo ln -sf /usr/bin/fdfind /usr/local/bin/fd"
+      user: "root"
+      description: "Link fd aliases"
+
+    # sem setup
+    - command: |
+        export PATH="/home/agent/.local/bin:$PATH" &&
+        sem setup &&
+        sed -i 's|exec sem diff|exec sem diff --verbose|' /home/agent/.local/bin/sem-diff-wrapper
+      user: "1000"
+      description: "Configure sem wrappers"
+
+{{.SkillsInstallSection}}
+    # Default Crush config
+    - command: |
+        mkdir -p /home/agent/.config/crush &&
+        cat > /home/agent/.config/crush/crush.json << '{{.ConfigDelimiter}}'
+{{.ConfigContent}}
+{{.ConfigDelimiter}}
+      user: "1000"
+      description: "Create default Crush config"
+
+# ── Network ─────────────────────────────────────────────────
+network:
+  serviceDomains:
+    openrouter.ai: openrouter
+
+  serviceAuth:
+    openrouter:
+      headerName: Authorization
+      valueFormat: "Bearer %s"
+
+  allowedDomains:
+    - "openrouter.ai:443"
+    - "github.com:443"
+    - "api.github.com:443"
+    - "objects.githubusercontent.com:443"
+    - "go.dev:443"
+    - "proxy.golang.org:443"
+    - "sum.golang.org:443"
+
+# ── Credential sources (read from host) ─────────────────────
+credentials:
+  sources:
+    openrouter:
+      env:
+        - OPENROUTER_API_KEY
+
+# ── Environment (proxy-managed vars → placeholder in-VM) ────
+environment:
+  proxyManaged:
+    - OPENROUTER_API_KEY
+  vars:
+    CRUSH_SHORT_TOOL_DESCRIPTIONS: "1"
+    PATH: "/home/agent/.local/bin:/usr/local/go/bin:${PATH}"
+    HOME: "/home/agent"
+
+# ── Agent memory ────────────────────────────────────────────
+memory: |
+  ## Sandbox environment
+
+  You are running inside a Docker sbx sandbox (microVM). Your workspace
+  is mounted at its absolute host path. `sudo` is passwordless — use it
+  for system package installs. Docker is available inside the sandbox;
+  containers you start are isolated within this microVM.
+
+  API keys are injected by the host-side proxy. You can use any
+  supported Crush provider normally; the credential flow is transparent.
+
+  ## Available tools
+
+  The following dev tools are pre-installed and available in PATH:
+
+  | Tool | Purpose |
+  |------|---------|
+  | `crush` | AI coding agent |
+  | `golangci-lint` | Go linter (v{{.GolangciLintVersion}}) |
+  | `gotestsum` | Structured test runner |
+  | `gopls` | Go language server |
+  | `sem` | Semantic code intelligence CLI (sem-mcp also available) |
+  | `rtk` | Rust toolkit |
+  | `markdown-oxide` | Markdown LSP |
+  | `git`, `ripgrep` (`rg`), `fd`, `gh` | Standard dev utilities |
+
+{{.SkillsMemorySection}}
+  Use `gotestsum --format pkgname-and-test-fails -- ./...` for Go tests
+  and `golangci-lint run ./...` for linting.
