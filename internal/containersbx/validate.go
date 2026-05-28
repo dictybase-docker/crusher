@@ -2,15 +2,23 @@ package containersbx
 
 import (
 	"errors"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 
+	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
+	I "github.com/IBM/fp-go/v2/io"
 	O "github.com/IBM/fp-go/v2/option"
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	Str "github.com/IBM/fp-go/v2/string"
+)
+
+const (
+	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charNo   = 6
 )
 
 var (
@@ -20,7 +28,30 @@ var (
 	)
 
 	isNonBlank = Pred.Not(isBlank)
+
+	randAlpha = func() int {
+		return F.Pipe2(alphabet, Str.Size, rand.Intn)
+	}
 )
+
+func randomByte() I.IO[byte] {
+	return F.Pipe1(
+		randAlpha,
+		I.Map(func(i int) byte { return alphabet[i] }),
+	)
+}
+
+// generateKitName creates a random kit name like "crush-sbx-aB3xZ".
+func generateKitName(n int) I.IO[string] {
+	return F.Pipe3(
+		A.Replicate(n, randomByte()),
+		I.SequenceArray[byte],
+		I.Map(func(bs []byte) string {
+			return string(bs)
+		}),
+		I.Map(Str.Prepend("crush-sbx")),
+	)
+}
 
 // NormalizeInput fills default values for blank fields.
 func NormalizeInput(input Input) Input {
@@ -33,13 +64,7 @@ func NormalizeInput(input Input) Input {
 		KitName: F.Pipe2(
 			input.KitName,
 			O.FromPredicate(isNonBlank),
-			O.GetOrElse(func() string {
-				cwd, err := os.Getwd()
-				if err != nil {
-					return "crush-sbx"
-				}
-				return filepath.Base(cwd)
-			}),
+			O.GetOrElse(generateKitName(charNo)),
 		),
 		ConfigPath:   input.ConfigPath,
 		SkillsPath:   input.SkillsPath,
@@ -163,3 +188,12 @@ func validateOutputParent(input Input) E.Either[error, Input] {
 		E.MapTo[error, string](input),
 	)
 }
+
+// func generateKitName() string {
+// 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+// 	return "crush-sbx-" + string(
+// 		A.MakeBy(5, func(int) byte {
+// 			return charset[randomInt(len(charset))]
+// 		}),
+// 	)
+// }
