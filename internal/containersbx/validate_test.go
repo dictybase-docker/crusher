@@ -29,8 +29,7 @@ func TestNormalizeInput_BlankOutputPath(t *testing.T) {
 func TestNormalizeInput_BlankKitName(t *testing.T) {
 	input := Input{APIKey: "test-key", KitName: ""}
 	result := NormalizeInput(input)
-	cwd, _ := os.Getwd()
-	assert.Equal(t, filepath.Base(cwd), result.KitName)
+	assert.Regexp(t, `^crush-sbx[a-zA-Z0-9]{6}$`, result.KitName)
 }
 
 func TestValidateInput_MissingAPIKey(t *testing.T) {
@@ -65,6 +64,7 @@ func TestValidateInput_AllExplicit(t *testing.T) {
 	input := Input{
 		APIKey:              "test-key",
 		OutputPath:          "test-output.zip",
+		ConfigPath:          configPath,
 		KitName:             "my-sandbox",
 		CrushVersion:        "v1.0.0",
 		GolangciLintVersion: "2.0.0",
@@ -85,8 +85,12 @@ func TestValidateInput_OutputParentNotExist(t *testing.T) {
 
 func TestValidateInput_ValidWithSkillsPath(t *testing.T) {
 	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.json")
+	os.WriteFile(configPath, []byte("{}"), 0o600)
+
 	input := Input{
 		APIKey:     "test-key",
+		ConfigPath: configPath,
 		SkillsPath: tmpDir,
 	}
 	either := ValidateInput(input)
