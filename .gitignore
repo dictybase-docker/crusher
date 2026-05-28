@@ -15,5 +15,4 @@
 # Go workspace
 go.work
 .crush
-crusher
 tea_debug.log
