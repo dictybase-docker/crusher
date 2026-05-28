@@ -56,6 +56,11 @@ func generateKitName(n int) I.IO[string] {
 // NormalizeInput fills default values for blank fields.
 func NormalizeInput(input Input) Input {
 	return Input{
+		ConfigPath:   input.ConfigPath,
+		SkillsPath:   input.SkillsPath,
+		APIKey:       input.APIKey,
+		ShouldCreate: input.ShouldCreate,
+		Ctx:          input.Ctx,
 		OutputPath: F.Pipe2(
 			input.OutputPath,
 			O.FromPredicate(isNonBlank),
@@ -66,10 +71,6 @@ func NormalizeInput(input Input) Input {
 			O.FromPredicate(isNonBlank),
 			O.GetOrElse(generateKitName(charNo)),
 		),
-		ConfigPath:   input.ConfigPath,
-		SkillsPath:   input.SkillsPath,
-		APIKey:       input.APIKey,
-		ShouldCreate: input.ShouldCreate,
 		CrushVersion: F.Pipe2(
 			input.CrushVersion,
 			O.FromPredicate(isNonBlank),
@@ -105,7 +106,6 @@ func NormalizeInput(input Input) Input {
 			O.FromPredicate(isNonBlank),
 			O.GetOrElse(func() string { return DefaultRtkVersion }),
 		),
-		Ctx: input.Ctx,
 	}
 }
 
