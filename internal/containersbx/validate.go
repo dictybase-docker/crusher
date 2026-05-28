@@ -2,6 +2,7 @@ package containersbx
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -11,9 +12,13 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	I "github.com/IBM/fp-go/v2/io"
+	IOE "github.com/IBM/fp-go/v2/ioeither"
+	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	Str "github.com/IBM/fp-go/v2/string"
+
+	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
 )
 
 const (
@@ -135,21 +140,20 @@ func validateAPIKey(input Input) E.Either[error, Input] {
 }
 
 func validateConfigPath(input Input) E.Either[error, Input] {
-	if input.ConfigPath == "" {
-		return E.Of[error](input)
-	}
-	return F.Pipe2(
+	return F.Pipe4(
 		input.ConfigPath,
-		E.FromPredicate(
-			func(p string) bool {
-				_, err := os.Stat(p)
-				return err == nil
-			},
-			func(p string) error {
-				return errors.New("config file not found: " + p)
-			},
-		),
-		E.MapTo[error, string](input),
+		FILE.Stat,
+		IOE.Map[error](func(_ os.FileInfo) Input {
+			return input
+		}),
+		IOE.MapLeft[Input](func(err error) error {
+			return fmt.Errorf(
+				"config file not found: %s: %w",
+				input.ConfigPath,
+				err,
+			)
+		}),
+		FP.ToEither[error, Input],
 	)
 }
 
