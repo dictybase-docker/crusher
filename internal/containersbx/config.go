@@ -1,31 +1,31 @@
 package containersbx
 
 import (
-	"os"
-	"strings"
-
+	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
 )
 
 // ReadConfig reads the user's crush.json or returns the default OpenRouter config.
 func ReadConfig(configPath string) IOE.IOEither[error, string] {
-	return O.Fold(
-		func() IOE.IOEither[error, string] {
-			return IOE.Of[error](DefaultConfig())
-		},
-		func(path string) IOE.IOEither[error, string] {
-			return IOE.TryCatchError(func() (string, error) {
-				data, err := os.ReadFile(path)
-				if err != nil {
-					return "", err
-				}
-				return string(data), nil
-			})
-		},
-	)(O.FromPredicate(func(s string) bool {
-		return strings.TrimSpace(s) != ""
-	})(configPath))
+	return F.Pipe2(
+		configPath,
+		// string -> Option[string]  (None if blank)
+		O.FromPredicate(isNonBlank),
+		// Option[string] -> IOEither[error, string]
+		O.Fold(
+			func() IOE.IOEither[error, string] {
+				return IOE.Of[error](DefaultConfig())
+			},
+			func(path string) IOE.IOEither[error, string] {
+				return F.Pipe1(
+					FILE.ReadFile(path),
+					IOE.Map[error](func(bs []byte) string { return string(bs) }),
+				)
+			},
+		),
+	)
 }
 
 // DefaultConfig returns the default OpenRouter-only crush.json.
