@@ -13,8 +13,9 @@ import (
 
 // Execute runs the full pipeline: generate → validate → pack → optionally create → cleanup.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
-	return F.Pipe6(
-		generateToTempDir(input),
+	return F.Pipe7(
+		input,
+		generateToTempDir,
 		IOE.Chain(validateKit),
 		IOE.Chain(storeSecret),
 		IOE.Chain(packKit),
