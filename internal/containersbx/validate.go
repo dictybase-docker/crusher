@@ -2,7 +2,6 @@ package containersbx
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -133,14 +132,10 @@ func ValidateInput(input Input) E.Either[error, Input] {
 }
 
 func validateAPIKey(input Input) E.Either[error, Input] {
-	return F.Pipe2(
+	return F.Pipe3(
 		input.APIKey,
-		E.FromPredicate(
-			isNonBlank,
-			func(string) error {
-				return errors.New("--api-key is required")
-			},
-		),
+		O.FromPredicate(Str.IsNonEmpty),
+		E.FromOption[string](Err.OnNone("API key must not be empty")),
 		E.MapTo[error, string](input),
 	)
 }
