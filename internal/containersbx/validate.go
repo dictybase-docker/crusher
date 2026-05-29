@@ -141,48 +141,57 @@ func validateAPIKey(input Input) E.Either[error, Input] {
 }
 
 func validateConfigPath(input Input) E.Either[error, Input] {
-	return F.Pipe5(
+	return F.Pipe2(
 		input.ConfigPath,
 		O.FromPredicate(Str.IsNonEmpty),
-		IOE.FromOption[string](Err.OnNone("config path must not be empty")),
-		IOE.Chain(FILE.Stat),
-		IOE.Map[error](F.Constant1[os.FileInfo](input)),
-		FP.ToEither[error, Input],
+		O.Fold(
+			func() E.Either[error, Input] { return E.Of[error](input) },
+			func(path string) E.Either[error, Input] {
+				return F.Pipe3(
+					IOE.Of[error](path),
+					IOE.Chain(FILE.Stat),
+					IOE.Map[error](F.Constant1[os.FileInfo](input)),
+					FP.ToEither[error, Input],
+				)
+			},
+		),
 	)
 }
 
 func validateSkillsPath(input Input) E.Either[error, Input] {
-	return F.Pipe6(
+	return F.Pipe2(
 		input.SkillsPath,
-		// string -> Option[string]
 		O.FromPredicate(Str.IsNonEmpty),
-		// Option[string] -> IOEither[error, string]
-		IOE.FromOption[string](Err.OnNone("skills path must not be empty")),
-		// IOEither[error, string] -> IOEither[error, FileInfo]
-		IOE.Chain(FILE.Stat),
-		// IOEither[error, FileInfo] -> IOEither[error, FileInfo]
-		IOE.ChainEitherK(isDirectory),
-		// IOEither[error, FileInfo] -> IOEither[error, Input]
-		IOE.Map[error](F.Constant1[os.FileInfo](input)),
-		// IOEither[error, Input] -> Either[error, Input]
-		FP.ToEither[error, Input],
+		O.Fold(
+			func() E.Either[error, Input] { return E.Of[error](input) },
+			func(path string) E.Either[error, Input] {
+				return F.Pipe4(
+					IOE.Of[error](path),
+					IOE.Chain(FILE.Stat),
+					IOE.ChainEitherK(isDirectory),
+					IOE.Map[error](F.Constant1[os.FileInfo](input)),
+					FP.ToEither[error, Input],
+				)
+			},
+		),
 	)
 }
 
 func validateOutputParent(input Input) E.Either[error, Input] {
-	return F.Pipe6(
+	return F.Pipe2(
 		input.OutputPath,
-		// string -> Option[string]
 		O.FromPredicate(Str.IsNonEmpty),
-		// Option[string] -> IOEither[error, string]
-		IOE.FromOption[string](Err.OnNone("output path parent must not be empty")),
-		// IOEither[error, string] -> IOEither[error, FileInfo]
-		IOE.Chain(FILE.Stat),
-		// IOEither[error, FileInfo] -> IOEither[error, FileInfo]
-		IOE.ChainEitherK(isDirectory),
-		// IOEither[error, FileInfo] -> IOEither[error, Input]
-		IOE.Map[error](F.Constant1[os.FileInfo](input)),
-		// IOEither[error, Input] -> Either[error, Input]
-		FP.ToEither[error, Input],
+		O.Fold(
+			func() E.Either[error, Input] { return E.Of[error](input) },
+			func(path string) E.Either[error, Input] {
+				return F.Pipe4(
+					IOE.Of[error](filepath.Dir(path)),
+					IOE.Chain(FILE.Stat),
+					IOE.ChainEitherK(isDirectory),
+					IOE.Map[error](F.Constant1[os.FileInfo](input)),
+					FP.ToEither[error, Input],
+				)
+			},
+		),
 	)
 }
