@@ -97,6 +97,34 @@ func TestValidateInput_ValidWithSkillsPath(t *testing.T) {
 	assert.True(t, E.IsRight(either))
 }
 
+func TestValidateInput_SkillsPathNotDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "not-a-dir")
+	os.WriteFile(filePath, []byte("data"), 0o600)
+
+	input := Input{
+		APIKey:     "test-key",
+		SkillsPath: filePath,
+	}
+	either := ValidateInput(input)
+	assert.True(t, E.IsLeft(either))
+	err := E.ToError(either)
+	assert.Contains(t, err.Error(), "skills path is not a directory")
+}
+
+func TestValidateInput_SkillsPathEmptyDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	input := Input{
+		APIKey:     "test-key",
+		SkillsPath: tmpDir,
+	}
+	either := ValidateInput(input)
+	assert.True(t, E.IsLeft(either))
+	err := E.ToError(either)
+	assert.Contains(t, err.Error(), "skills directory is empty")
+}
+
 func TestValidateInput_ValidWithConfigPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.json")
