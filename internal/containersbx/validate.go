@@ -10,6 +10,7 @@ import (
 
 	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
+	Err "github.com/IBM/fp-go/v2/errors"
 	F "github.com/IBM/fp-go/v2/function"
 	I "github.com/IBM/fp-go/v2/io"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
@@ -37,6 +38,11 @@ var (
 	randAlpha = func() int {
 		return F.Pipe2(alphabet, Str.Size, rand.Intn)
 	}
+
+	isDirectory = E.FromPredicate(
+		os.FileInfo.IsDir,
+		F.Constant1[os.FileInfo](errors.New("skills path is not a directory")),
+	)
 )
 
 func randomByte() I.IO[byte] {
@@ -158,21 +164,19 @@ func validateConfigPath(input Input) E.Either[error, Input] {
 }
 
 func validateSkillsPath(input Input) E.Either[error, Input] {
-	if input.SkillsPath == "" {
-		return E.Of[error](input)
-	}
-	return F.Pipe2(
+	return F.Pipe6(
 		input.SkillsPath,
-		E.FromPredicate(
-			func(p string) bool {
-				info, err := os.Stat(p)
-				return err == nil && info.IsDir()
-			},
-			func(p string) error {
-				return errors.New("skills directory not found: " + p)
-			},
-		),
-		E.MapTo[error, string](input),
+		// string -> Option[string]
+		O.FromPredicate(Str.IsNonEmpty),
+		// Option[string] -> IOEither[error, string]
+		IOE.FromOption[string](Err.OnNone("path must not be empty")),
+		// IOEither[error, string] -> IOEither[error, FileInfo]
+		IOE.Chain(FILE.Stat),
+		// IOEither[error, FileInfo] -> IOEither[error, FileInfo]
+		IOE.ChainEitherK(isDirectory),
+		// IOEither[error, FileInfo] -> IOEither[error, string]
+		IOE.Map[error](F.Constant1[os.FileInfo](input)),
+		FP.ToEither[error, Input],
 	)
 }
 
