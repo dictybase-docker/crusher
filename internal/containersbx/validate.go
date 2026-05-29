@@ -146,19 +146,12 @@ func validateAPIKey(input Input) E.Either[error, Input] {
 }
 
 func validateConfigPath(input Input) E.Either[error, Input] {
-	return F.Pipe4(
+	return F.Pipe5(
 		input.ConfigPath,
-		FILE.Stat,
-		IOE.Map[error](func(_ os.FileInfo) Input {
-			return input
-		}),
-		IOE.MapLeft[Input](func(err error) error {
-			return fmt.Errorf(
-				"config file not found: %s: %w",
-				input.ConfigPath,
-				err,
-			)
-		}),
+		O.FromPredicate(Str.IsNonEmpty),
+		IOE.FromOption[string](Err.OnNone("config path must not be empty")),
+		IOE.Chain(FILE.Stat),
+		IOE.Map[error](F.Constant1[os.FileInfo](input)),
 		FP.ToEither[error, Input],
 	)
 }
@@ -169,13 +162,14 @@ func validateSkillsPath(input Input) E.Either[error, Input] {
 		// string -> Option[string]
 		O.FromPredicate(Str.IsNonEmpty),
 		// Option[string] -> IOEither[error, string]
-		IOE.FromOption[string](Err.OnNone("path must not be empty")),
+		IOE.FromOption[string](Err.OnNone("skills path must not be empty")),
 		// IOEither[error, string] -> IOEither[error, FileInfo]
 		IOE.Chain(FILE.Stat),
 		// IOEither[error, FileInfo] -> IOEither[error, FileInfo]
 		IOE.ChainEitherK(isDirectory),
-		// IOEither[error, FileInfo] -> IOEither[error, string]
+		// IOEither[error, FileInfo] -> IOEither[error, Input]
 		IOE.Map[error](F.Constant1[os.FileInfo](input)),
+		// IOEither[error, Input] -> Either[error, Input]
 		FP.ToEither[error, Input],
 	)
 }
@@ -196,12 +190,3 @@ func validateOutputParent(input Input) E.Either[error, Input] {
 		E.MapTo[error, string](input),
 	)
 }
-
-// func generateKitName() string {
-// 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-// 	return "crush-sbx-" + string(
-// 		A.MakeBy(5, func(int) byte {
-// 			return charset[randomInt(len(charset))]
-// 		}),
-// 	)
-// }
