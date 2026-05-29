@@ -170,18 +170,19 @@ func validateSkillsPath(input Input) E.Either[error, Input] {
 }
 
 func validateOutputParent(input Input) E.Either[error, Input] {
-	return F.Pipe2(
+	return F.Pipe6(
 		input.OutputPath,
-		E.FromPredicate(
-			func(p string) bool {
-				parent := filepath.Dir(p)
-				info, err := os.Stat(parent)
-				return err == nil && info.IsDir()
-			},
-			func(p string) error {
-				return errors.New("output path parent directory does not exist: " + filepath.Dir(p))
-			},
-		),
-		E.MapTo[error, string](input),
+		// string -> Option[string]
+		O.FromPredicate(Str.IsNonEmpty),
+		// Option[string] -> IOEither[error, string]
+		IOE.FromOption[string](Err.OnNone("output path parent must not be empty")),
+		// IOEither[error, string] -> IOEither[error, FileInfo]
+		IOE.Chain(FILE.Stat),
+		// IOEither[error, FileInfo] -> IOEither[error, FileInfo]
+		IOE.ChainEitherK(isDirectory),
+		// IOEither[error, FileInfo] -> IOEither[error, Input]
+		IOE.Map[error](F.Constant1[os.FileInfo](input)),
+		// IOEither[error, Input] -> Either[error, Input]
+		FP.ToEither[error, Input],
 	)
 }
