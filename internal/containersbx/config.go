@@ -21,7 +21,9 @@ func ReadConfig(configPath string) IOE.IOEither[error, string] {
 			func(path string) IOE.IOEither[error, string] {
 				return F.Pipe1(
 					FILE.ReadFile(path),
-					IOE.Map[error](func(bs []byte) string { return string(bs) }),
+					IOE.Map[error](func(bs []byte) string {
+						return string(bs)
+					}),
 				)
 			},
 		),

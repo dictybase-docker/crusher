@@ -19,12 +19,11 @@ type specTemplateData struct {
 	RtkVersion          string
 	ConfigContent       string
 	ConfigDelimiter     string
-	SkillsMemorySection string
 	SkillsEnvVar        string
 }
 
 // GenerateSpec renders a spec.yaml string from the given Input.
-func GenerateSpec(input Input, configContent string, skills map[string]string) (string, error) {
+func GenerateSpec(input Input, configContent string) (string, error) {
 	data := specTemplateData{
 		KitName:             input.KitName,
 		GoVersion:           input.GoVersion,
@@ -34,7 +33,6 @@ func GenerateSpec(input Input, configContent string, skills map[string]string) (
 		MoxideVersion:       input.MoxideVersion,
 		SemVersion:          input.SemVersion,
 		RtkVersion:          input.RtkVersion,
-		SkillsMemorySection: generateSkillsMemorySection(skills),
 		SkillsEnvVar:        generateSkillsEnvVar(input.SkillsAbsPath),
 	}
 
@@ -84,20 +82,4 @@ func generateSkillsEnvVar(skillsAbsPath string) string {
 		return ""
 	}
 	return fmt.Sprintf(`    CRUSH_SKILLS_DIR: %q`, skillsAbsPath) + "\n"
-}
-
-// generateSkillsMemorySection renders the skills table for memory.
-func generateSkillsMemorySection(skills map[string]string) string {
-	if len(skills) == 0 {
-		return ""
-	}
-
-	var lines []string
-	for name := range skills {
-		lines = append(lines, fmt.Sprintf("  | `%s` | Custom skill |", name))
-	}
-	header := "\n  ## Skills\n\n" +
-		"  The following custom skills are available:\n\n" +
-		"  | Skill | Purpose |\n  |-------|---------|\n"
-	return header + strings.Join(lines, "\n") + "\n"
 }

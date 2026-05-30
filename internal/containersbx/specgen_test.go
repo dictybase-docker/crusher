@@ -19,7 +19,7 @@ func TestGenerateSpec_MinimalInput(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := DefaultConfig()
-	spec, err := GenerateSpec(input, configContent, map[string]string{})
+	spec, err := GenerateSpec(input, configContent)
 	require.NoError(t, err)
 
 	assert.Contains(t, spec, "test-sandbox")
@@ -43,7 +43,7 @@ func TestGenerateSpec_CustomConfig(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := `{"model":"custom-model"}`
-	spec, err := GenerateSpec(input, configContent, map[string]string{})
+	spec, err := GenerateSpec(input, configContent)
 	require.NoError(t, err)
 
 	assert.Contains(t, spec, "custom-sbx")
@@ -64,13 +64,9 @@ func TestGenerateSpec_WithSkills(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 		SkillsAbsPath:       "/home/agent/crush/skills",
 	}
-	skills := map[string]string{
-		"my-skill": "# My Skill\nContent here",
-	}
-	spec, err := GenerateSpec(input, DefaultConfig(), skills)
+	spec, err := GenerateSpec(input, DefaultConfig())
 	require.NoError(t, err)
 
-	assert.Contains(t, spec, "my-skill")
 	assert.Contains(t, spec, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
 }
 
@@ -85,7 +81,7 @@ func TestGenerateSpec_EmptySkills(t *testing.T) {
 		SemVersion:          DefaultSemVersion,
 		RtkVersion:          DefaultRtkVersion,
 	}
-	spec, err := GenerateSpec(input, DefaultConfig(), map[string]string{})
+	spec, err := GenerateSpec(input, DefaultConfig())
 	require.NoError(t, err)
 
 	assert.NotContains(t, spec, "Install skill:")
@@ -104,7 +100,7 @@ func TestGenerateSpec_AllVersions(t *testing.T) {
 		SemVersion:          "v4.0.0",
 		RtkVersion:          "v2.0.0",
 	}
-	spec, err := GenerateSpec(input, DefaultConfig(), map[string]string{})
+	spec, err := GenerateSpec(input, DefaultConfig())
 	require.NoError(t, err)
 
 	assert.Contains(t, spec, "go1.22.0.linux-amd64")
@@ -149,7 +145,7 @@ func TestGenerateSpec_ConfigContainsCRUSHCFG(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := `{"key": "CRUSHCFG value"}`
-	spec, err := GenerateSpec(input, configContent, map[string]string{})
+	spec, err := GenerateSpec(input, configContent)
 	require.NoError(t, err)
 
 	assert.Contains(t, spec, "CRUSHCFG1")
@@ -171,10 +167,5 @@ func TestGenerateSkillsEnvVar_WithPath(t *testing.T) {
 
 func TestGenerateSkillsEnvVar_EmptyPath(t *testing.T) {
 	result := generateSkillsEnvVar("")
-	assert.Empty(t, result)
-}
-
-func TestGenerateSkillsMemorySection_Empty(t *testing.T) {
-	result := generateSkillsMemorySection(map[string]string{})
 	assert.Empty(t, result)
 }
