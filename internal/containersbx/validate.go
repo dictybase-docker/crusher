@@ -2,7 +2,6 @@ package containersbx
 
 import (
 	"errors"
-	"io/fs"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -16,7 +15,6 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
-	ORD "github.com/IBM/fp-go/v2/ord"
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	Str "github.com/IBM/fp-go/v2/string"
 
@@ -44,15 +42,6 @@ var (
 		os.FileInfo.IsDir,
 		F.Constant1[os.FileInfo](errors.New("skills path is not a directory")),
 	)
-
-	intOrd            = ORD.FromStrictCompare[int]()
-	isGreaterThanZero = ORD.Gt(intOrd)(0)
-	isNonEmptyDir     = E.FromPredicate(
-		Pred.ContraMap(A.Size[fs.DirEntry])(isGreaterThanZero),
-		F.Constant1[[]fs.DirEntry](errors.New("skills directory is empty")),
-	)
-
-	readDir = IOE.Eitherize1(os.ReadDir)
 )
 
 func randomByte() I.IO[byte] {
@@ -176,23 +165,15 @@ func validateSkillsPath(input Input) E.Either[error, Input] {
 		O.Fold(
 			func() E.Either[error, Input] { return E.Of[error](input) },
 			func(path string) E.Either[error, Input] {
-				return F.Pipe2(
-					validateNonEmptyDir(path),
-					IOE.Map[error](F.Constant1[string](input)),
+				return F.Pipe4(
+					IOE.Of[error](path),
+					IOE.Chain(FILE.Stat),
+					IOE.ChainEitherK(isDirectory),
+					IOE.Map[error](F.Constant1[os.FileInfo](input)),
 					FP.ToEither[error, Input],
 				)
 			},
 		),
-	)
-}
-
-func validateNonEmptyDir(path string) IOE.IOEither[error, string] {
-	return F.Pipe4(
-		FILE.Stat(path),
-		IOE.ChainEitherK(isDirectory),
-		IOE.Chain(F.Constant1[os.FileInfo](readDir(path))),
-		IOE.ChainEitherK(isNonEmptyDir),
-		IOE.Map[error](F.Constant1[[]fs.DirEntry](path)),
 	)
 }
 

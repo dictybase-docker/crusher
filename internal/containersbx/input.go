@@ -45,6 +45,7 @@ type Input struct {
 	OutputPath          string // Path for the packed kit zip
 	ConfigPath          string // Path to user's crush.json (empty = use default)
 	SkillsPath          string // Path to skills directory
+	SkillsAbsPath       string // Resolved absolute path for read-only workspace mount (set by generateToTempDir)
 	KitName             string // Sandbox display name
 	APIKey              string // OpenRouter API key (required)
 	ShouldCreate        bool   // Whether to also create the sandbox instance

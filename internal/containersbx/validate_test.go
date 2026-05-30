@@ -120,9 +120,7 @@ func TestValidateInput_SkillsPathEmptyDirectory(t *testing.T) {
 		SkillsPath: tmpDir,
 	}
 	either := ValidateInput(input)
-	assert.True(t, E.IsLeft(either))
-	err := E.ToError(either)
-	assert.Contains(t, err.Error(), "skills directory is empty")
+	assert.True(t, E.IsRight(either))
 }
 
 func TestValidateInput_ValidWithConfigPath(t *testing.T) {

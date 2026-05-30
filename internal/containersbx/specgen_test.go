@@ -62,6 +62,7 @@ func TestGenerateSpec_WithSkills(t *testing.T) {
 		MoxideVersion:       DefaultMoxideVersion,
 		SemVersion:          DefaultSemVersion,
 		RtkVersion:          DefaultRtkVersion,
+		SkillsAbsPath:       "/home/agent/crush/skills",
 	}
 	skills := map[string]string{
 		"my-skill": "# My Skill\nContent here",
@@ -69,9 +70,8 @@ func TestGenerateSpec_WithSkills(t *testing.T) {
 	spec, err := GenerateSpec(input, DefaultConfig(), skills)
 	require.NoError(t, err)
 
-	assert.Contains(t, spec, "Install my-skill")
 	assert.Contains(t, spec, "my-skill")
-	assert.Contains(t, spec, "Content here")
+	assert.Contains(t, spec, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
 }
 
 func TestGenerateSpec_EmptySkills(t *testing.T) {
@@ -90,6 +90,7 @@ func TestGenerateSpec_EmptySkills(t *testing.T) {
 
 	assert.NotContains(t, spec, "Install skill:")
 	assert.NotContains(t, spec, "## Skills")
+	assert.NotContains(t, spec, "CRUSH_SKILLS_DIR")
 }
 
 func TestGenerateSpec_AllVersions(t *testing.T) {
@@ -117,21 +118,21 @@ func TestGenerateSpec_AllVersions(t *testing.T) {
 
 func TestEscapeForYAMLLiteral_NoMatch(t *testing.T) {
 	content := "plain content"
-	escaped, delim := escapeForYAMLLiteral(content, "CRUSHCFG")
+	escaped, delim := escapeForYAMLLiteral(content)
 	assert.Equal(t, "plain content", escaped)
 	assert.Equal(t, "CRUSHCFG", delim)
 }
 
 func TestEscapeForYAMLLiteral_OneMatch(t *testing.T) {
 	content := "before CRUSHCFG after"
-	escaped, delim := escapeForYAMLLiteral(content, "CRUSHCFG")
+	escaped, delim := escapeForYAMLLiteral(content)
 	assert.Equal(t, "before CRUSHCFG after", escaped)
 	assert.Equal(t, "CRUSHCFG1", delim)
 }
 
 func TestEscapeForYAMLLiteral_MultipleMatches(t *testing.T) {
 	content := "CRUSHCFG in here and CRUSHCFG again CRUSHCFG"
-	escaped, delim := escapeForYAMLLiteral(content, "CRUSHCFG")
+	escaped, delim := escapeForYAMLLiteral(content)
 	assert.Equal(t, content, escaped)
 	assert.Equal(t, "CRUSHCFG1", delim)
 }
@@ -155,27 +156,6 @@ func TestGenerateSpec_ConfigContainsCRUSHCFG(t *testing.T) {
 	assert.Contains(t, spec, `{"key": "CRUSHCFG value"}`)
 }
 
-func TestGenerateSpec_SkillContainsCRUSHSKILL(t *testing.T) {
-	input := Input{
-		KitName:             "test-sbx",
-		GoVersion:           DefaultGoVersion,
-		CrushVersion:        DefaultCrushVersion,
-		GolangciLintVersion: DefaultGolangciLintVersion,
-		GotestsumVersion:    DefaultGotestsumVersion,
-		MoxideVersion:       DefaultMoxideVersion,
-		SemVersion:          DefaultSemVersion,
-		RtkVersion:          DefaultRtkVersion,
-	}
-	skills := map[string]string{
-		"danger": "echo CRUSHSKILL",
-	}
-	spec, err := GenerateSpec(input, DefaultConfig(), skills)
-	require.NoError(t, err)
-
-	assert.Contains(t, spec, "CRUSHSKILL1")
-	assert.Contains(t, spec, "echo CRUSHSKILL")
-}
-
 func TestIncrementDelimiter(t *testing.T) {
 	assert.Equal(t, "CRUSHCFG1", incrementDelimiter("CRUSHCFG"))
 	assert.Equal(t, "CRUSHCFG2", incrementDelimiter("CRUSHCFG1"))
@@ -184,8 +164,13 @@ func TestIncrementDelimiter(t *testing.T) {
 	assert.Equal(t, "SKILL2", incrementDelimiter("SKILL1"))
 }
 
-func TestGenerateSkillsInstallSection_Empty(t *testing.T) {
-	result := generateSkillsInstallSection(map[string]string{})
+func TestGenerateSkillsEnvVar_WithPath(t *testing.T) {
+	result := generateSkillsEnvVar("/home/agent/crush/skills")
+	assert.Contains(t, result, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
+}
+
+func TestGenerateSkillsEnvVar_EmptyPath(t *testing.T) {
+	result := generateSkillsEnvVar("")
 	assert.Empty(t, result)
 }
 

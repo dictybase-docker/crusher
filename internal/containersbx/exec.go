@@ -35,48 +35,60 @@ func generateToTempDir(input Input) IOE.IOEither[error, execState] {
 			return F.Pipe1(
 				ReadSkills(input.SkillsPath),
 				IOE.Chain(func(skills map[string]string) IOE.IOEither[error, execState] {
-					return F.Pipe1(
-						IOE.TryCatchError(func() (string, error) {
-							return GenerateSpec(input, configContent, skills)
-						}),
-						IOE.Chain(func(spec string) IOE.IOEither[error, execState] {
-							return IOE.TryCatchError(func() (execState, error) {
-								tempDir, err := os.MkdirTemp("", "crush-sbx-*")
-								if err != nil {
-									return execState{}, fmt.Errorf(
-										"failed to create temp dir: %w",
-										err,
-									)
-								}
-								specPath := filepath.Join(tempDir, "spec.yaml")
-								writeSpec := func() error {
-									return os.WriteFile(specPath, []byte(spec), filePerm)
-								}
-								if err := writeSpec(); err != nil {
-									os.RemoveAll(tempDir)
-									return execState{}, fmt.Errorf(
-										"failed to write spec.yaml: %w",
-										err,
-									)
-								}
-								absOutput, err := filepath.Abs(input.OutputPath)
-								if err != nil {
-									os.RemoveAll(tempDir)
-									return execState{}, fmt.Errorf(
-										"failed to resolve output path: %w",
-										err,
-									)
-								}
-								return execState{
-									Input:      input,
-									TempDir:    tempDir,
-									OutputPath: absOutput,
-									KitName:    input.KitName,
-									APIKey:     input.APIKey,
-								}, nil
-							})
-						}),
-					)
+					return func() IOE.IOEither[error, execState] {
+						if input.SkillsPath != "" {
+							absSkills, err := filepath.Abs(input.SkillsPath)
+							if err != nil {
+								return IOE.Left[execState](fmt.Errorf(
+									"failed to resolve skills path: %w",
+									err,
+								))
+							}
+							input.SkillsAbsPath = absSkills
+						}
+						return F.Pipe1(
+							IOE.TryCatchError(func() (string, error) {
+								return GenerateSpec(input, configContent, skills)
+							}),
+							IOE.Chain(func(spec string) IOE.IOEither[error, execState] {
+								return IOE.TryCatchError(func() (execState, error) {
+									tempDir, err := os.MkdirTemp("", "crush-sbx-*")
+									if err != nil {
+										return execState{}, fmt.Errorf(
+											"failed to create temp dir: %w",
+											err,
+										)
+									}
+									specPath := filepath.Join(tempDir, "spec.yaml")
+									writeSpec := func() error {
+										return os.WriteFile(specPath, []byte(spec), filePerm)
+									}
+									if err := writeSpec(); err != nil {
+										os.RemoveAll(tempDir)
+										return execState{}, fmt.Errorf(
+											"failed to write spec.yaml: %w",
+											err,
+										)
+									}
+									absOutput, err := filepath.Abs(input.OutputPath)
+									if err != nil {
+										os.RemoveAll(tempDir)
+										return execState{}, fmt.Errorf(
+											"failed to resolve output path: %w",
+											err,
+										)
+									}
+									return execState{
+										Input:      input,
+										TempDir:    tempDir,
+										OutputPath: absOutput,
+										KitName:    input.KitName,
+										APIKey:     input.APIKey,
+									}, nil
+								})
+							}),
+						)
+					}()
 				}),
 			)
 		}),
@@ -137,17 +149,22 @@ func packKit(state execState) IOE.IOEither[error, execState] {
 }
 
 // createSandboxOrSkip runs "sbx create <name> --kit <outputPath>" if ShouldCreate.
+// If SkillsAbsPath is set, it's appended as a read-only workspace.
 func createSandboxOrSkip(state execState) IOE.IOEither[error, execState] {
 	if !state.ShouldCreate {
 		return IOE.Of[error](state)
 	}
+	args := []string{
+		"create", state.KitName,
+		"--kit", state.OutputPath,
+	}
+	if state.SkillsAbsPath != "" {
+		args = append(args, state.SkillsAbsPath+":ro")
+	}
 	return F.Pipe1(
 		runSbxCommand(CommandSpec{
-			Bin: sbxBinary,
-			Args: []string{
-				"create", state.KitName,
-				"--kit", state.OutputPath,
-			},
+			Bin:  sbxBinary,
+			Args: args,
 		}),
 		IOE.Map[error](func(F.Void) execState {
 			state.Result.Created = true

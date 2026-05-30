@@ -10,13 +10,13 @@ import (
 )
 
 // Execute runs the container create command and returns the result.
-func Execute(r ResolvedInput) IOE.IOEither[error, ContainerResult] {
+func Execute(rinput ResolvedInput) IOE.IOEither[error, ContainerResult] {
 	return F.Pipe3(
-		r,
+		rinput,
 		RenderCommand,
 		runProcess,
 		IOE.Map[error](func(F.Void) ContainerResult {
-			return ContainerResult{Name: r.ContainerName}
+			return ContainerResult{Name: rinput.ContainerName}
 		}),
 	)
 }

@@ -95,8 +95,7 @@ commands:
       user: "1000"
       description: "Configure sem wrappers"
 
-{{.SkillsInstallSection}}
-    # Default Crush config
+# Default Crush config
     - command: |
         mkdir -p /home/agent/.config/crush &&
         cat > /home/agent/.config/crush/crush.json << '{{.ConfigDelimiter}}'
@@ -139,6 +138,7 @@ environment:
     CRUSH_SHORT_TOOL_DESCRIPTIONS: "1"
     PATH: "/home/agent/.local/bin:/usr/local/go/bin:${PATH}"
     HOME: "/home/agent"
+{{.SkillsEnvVar}}
 
 # ── Agent memory ────────────────────────────────────────────
 memory: |
