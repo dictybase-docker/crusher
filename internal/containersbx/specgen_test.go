@@ -182,3 +182,64 @@ func TestGenerateSkillsEnvVar_EmptyPath(t *testing.T) {
 	result := generateSkillsEnvVar("")
 	assert.Empty(t, result)
 }
+
+func TestBuildSpecData_FieldMapping(t *testing.T) {
+	gs := genState{
+		input: Input{
+			KitName:             "my-kit",
+			GoVersion:           "1.23.0",
+			CrushVersion:        "v2.0.0",
+			GolangciLintVersion: "2.0.0",
+			GotestsumVersion:    "v0.6.0",
+			MoxideVersion:       "v0.4.0",
+			SemVersion:          "v3.0.0",
+			RtkVersion:          "v1.5.0",
+			SkillsAbsPath:       "/skills",
+		},
+		configContent: `{"key":"value"}`,
+	}
+	data := buildSpecData(gs)
+	require.Equal(t, "my-kit", data.KitName)
+	require.Equal(t, "1.23.0", data.GoVersion)
+	require.Equal(t, "v2.0.0", data.CrushVersion)
+	require.Equal(t, "2.0.0", data.GolangciLintVersion)
+	require.Equal(t, "v0.6.0", data.GotestsumVersion)
+	require.Equal(t, "v0.4.0", data.MoxideVersion)
+	require.Equal(t, "v3.0.0", data.SemVersion)
+	require.Equal(t, "v1.5.0", data.RtkVersion)
+	require.Equal(t, `{"key":"value"}`, data.ConfigContent)
+	require.Equal(t, "CRUSHCFG", data.ConfigDelimiter)
+	require.Contains(t, data.SkillsEnvVar, "/skills")
+}
+
+func TestBuildSpecData_DelimiterEscaping(t *testing.T) {
+	gs := genState{
+		input:         Input{KitName: "k"},
+		configContent: `contains CRUSHCFG word`,
+	}
+	data := buildSpecData(gs)
+	require.Equal(t, "CRUSHCFG1", data.ConfigDelimiter)
+	require.Equal(t, `contains CRUSHCFG word`, data.ConfigContent)
+}
+
+func TestParseAndRenderTemplate_Success(t *testing.T) {
+	gs := genState{
+		input: Input{
+			KitName:             "tmpl-test",
+			GoVersion:           DefaultGoVersion,
+			CrushVersion:        DefaultCrushVersion,
+			GolangciLintVersion: DefaultGolangciLintVersion,
+			GotestsumVersion:    DefaultGotestsumVersion,
+			MoxideVersion:       DefaultMoxideVersion,
+			SemVersion:          DefaultSemVersion,
+			RtkVersion:          DefaultRtkVersion,
+		},
+		configContent: DefaultConfig(),
+	}
+	data := buildSpecData(gs)
+	result := parseAndRenderTemplate(data)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
+	require.Contains(t, spec, "tmpl-test")
+	require.NotContains(t, spec, "{{.")
+}

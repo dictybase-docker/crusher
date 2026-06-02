@@ -27,40 +27,52 @@ type specTemplateData struct {
 
 // GenerateSpec renders the spec template from gs.input and gs.configContent.
 func GenerateSpec(gs genState) IOE.IOEither[error, genState] {
-	return F.Pipe1(
-		IOE.TryCatchError(func() (string, error) {
-			data := specTemplateData{
-				KitName:             gs.input.KitName,
-				GoVersion:           gs.input.GoVersion,
-				CrushVersion:        gs.input.CrushVersion,
-				GolangciLintVersion: gs.input.GolangciLintVersion,
-				GotestsumVersion:    gs.input.GotestsumVersion,
-				MoxideVersion:       gs.input.MoxideVersion,
-				SemVersion:          gs.input.SemVersion,
-				RtkVersion:          gs.input.RtkVersion,
-				SkillsEnvVar:        generateSkillsEnvVar(gs.input.SkillsAbsPath),
-			}
-
-			data.ConfigContent, data.ConfigDelimiter = escapeForYAMLLiteral(gs.configContent)
-
-			tmpl, err := template.New("spec").Parse(specTemplate)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse spec template: %w", err)
-			}
-
-			var buf bytes.Buffer
-			if err := tmpl.Execute(&buf, data); err != nil {
-				return "", fmt.Errorf("failed to render spec: %w", err)
-			}
-
-			return buf.String(), nil
-		}),
+	return F.Pipe2(
+		IOE.Of[error](buildSpecData(gs)),
+		IOE.Chain(parseAndRenderTemplate),
 		IOE.Map[error](func(spec string) genState {
 			return genState{
 				input:         gs.input,
 				configContent: gs.configContent,
 				spec:          spec,
 			}
+		}),
+	)
+}
+
+// buildSpecData constructs the template data from genState. Pure — no I/O.
+func buildSpecData(gs genState) specTemplateData {
+	content, delim := escapeForYAMLLiteral(gs.configContent)
+	return specTemplateData{
+		KitName:             gs.input.KitName,
+		GoVersion:           gs.input.GoVersion,
+		CrushVersion:        gs.input.CrushVersion,
+		GolangciLintVersion: gs.input.GolangciLintVersion,
+		GotestsumVersion:    gs.input.GotestsumVersion,
+		MoxideVersion:       gs.input.MoxideVersion,
+		SemVersion:          gs.input.SemVersion,
+		RtkVersion:          gs.input.RtkVersion,
+		SkillsEnvVar:        generateSkillsEnvVar(gs.input.SkillsAbsPath),
+		ConfigContent:       content,
+		ConfigDelimiter:     delim,
+	}
+}
+
+// parseAndRenderTemplate is a Kleisli arrow: specTemplateData → IOEither[error, string].
+// Mirrors runSbxCommand: one TryCatchError per I/O boundary, composed with Chain.
+func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
+	return F.Pipe1(
+		IOE.TryCatchError(func() (*template.Template, error) {
+			return template.New("spec").Parse(specTemplate)
+		}),
+		IOE.Chain(func(tmpl *template.Template) IOE.IOEither[error, string] {
+			return IOE.TryCatchError(func() (string, error) {
+				var buf bytes.Buffer
+				if err := tmpl.Execute(&buf, data); err != nil {
+					return "", err
+				}
+				return buf.String(), nil
+			})
 		}),
 	)
 }
