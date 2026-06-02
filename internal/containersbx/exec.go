@@ -97,12 +97,12 @@ func makeTempDirWithSpec(gs genState) IOE.IOEither[error, genState] {
 
 // writeSpecAndBuild writes spec.yaml to the temp dir and builds execState.
 func writeSpecAndBuild(gs genState) IOE.IOEither[error, execState] {
-	specPath := file.Join("spec.yaml")(gs.tempDir)
-	return F.Pipe3(
-		[]byte(gs.spec),
-		FILE.WriteFile(specPath, filePerm),
+	return F.Pipe5(
+		gs.tempDir,
+		file.Join("spec.yaml"),
+		FILE.Create,
+		FILE.WriteAll[*os.File]([]byte(gs.spec)),
 		IOE.MapLeft[[]byte](func(err error) error {
-			_ = os.RemoveAll(gs.tempDir)
 			return fmt.Errorf("failed to write spec.yaml: %w", err)
 		}),
 		IOE.Chain(func(_ []byte) IOE.IOEither[error, execState] {
