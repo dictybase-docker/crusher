@@ -18,14 +18,22 @@ import (
 
 // Execute runs the full pipeline: generate → validate → pack → optionally create → cleanup.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
-	return F.Pipe7(
+	return F.Pipe8(
 		input,
 		generateToTempDir,
 		IOE.Chain(validateKit),
 		IOE.Chain(storeSecret),
 		IOE.Chain(packKit),
 		IOE.Chain(createSandboxOrSkip),
-		IOE.Chain(cleanupTempDir),
+		IOE.Chain(func(state execState) IOE.IOEither[error, execState] {
+			return IOE.TryCatchError(func() (execState, error) {
+				err := os.RemoveAll(state.TempDir)
+				return state, err
+			})
+		}),
+		IOE.MapLeft[execState](func(err error) error {
+			return fmt.Errorf("failed to cleanup temp dir: %w", err)
+		}),
 		IOE.Map[error](func(state execState) KitResult {
 			return state.Result
 		}),
@@ -226,14 +234,6 @@ func createSandboxOrSkip(state execState) IOE.IOEither[error, execState] {
 			},
 		),
 	)
-}
-
-// cleanupTempDir removes the temp directory.
-func cleanupTempDir(state execState) IOE.IOEither[error, execState] {
-	return IOE.TryCatchError(func() (execState, error) {
-		_ = os.RemoveAll(state.TempDir)
-		return state, nil
-	})
 }
 
 // runSbxCommand executes an sbx CLI command.
