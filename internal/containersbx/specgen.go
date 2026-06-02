@@ -27,8 +27,10 @@ type specTemplateData struct {
 
 // GenerateSpec renders the spec template from gs.input and gs.configContent.
 func GenerateSpec(gs genState) IOE.IOEither[error, genState] {
-	return F.Pipe2(
-		IOE.Of[error](buildSpecData(gs)),
+	return F.Pipe4(
+		gs,
+		buildSpecData,
+		IOE.Of[error],
 		IOE.Chain(parseAndRenderTemplate),
 		IOE.Map[error](func(spec string) genState {
 			return genState{
