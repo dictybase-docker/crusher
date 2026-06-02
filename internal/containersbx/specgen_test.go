@@ -123,56 +123,6 @@ func TestGenerateSpec_AllVersions(t *testing.T) {
 	assert.Contains(t, spec.spec, `rtk" "v2.0.0"`)
 }
 
-func TestEscapeForYAMLLiteral_NoMatch(t *testing.T) {
-	content := "plain content"
-	escaped, delim := escapeForYAMLLiteral(content)
-	assert.Equal(t, "plain content", escaped)
-	assert.Equal(t, "CRUSHCFG", delim)
-}
-
-func TestEscapeForYAMLLiteral_OneMatch(t *testing.T) {
-	content := "before CRUSHCFG after"
-	escaped, delim := escapeForYAMLLiteral(content)
-	assert.Equal(t, "before CRUSHCFG after", escaped)
-	assert.Equal(t, "CRUSHCFG1", delim)
-}
-
-func TestEscapeForYAMLLiteral_MultipleMatches(t *testing.T) {
-	content := "CRUSHCFG in here and CRUSHCFG again CRUSHCFG"
-	escaped, delim := escapeForYAMLLiteral(content)
-	assert.Equal(t, content, escaped)
-	assert.Equal(t, "CRUSHCFG1", delim)
-}
-
-func TestGenerateSpec_ConfigContainsCRUSHCFG(t *testing.T) {
-	input := Input{
-		KitName:             "test-sbx",
-		GoVersion:           DefaultGoVersion,
-		CrushVersion:        DefaultCrushVersion,
-		GolangciLintVersion: DefaultGolangciLintVersion,
-		GotestsumVersion:    DefaultGotestsumVersion,
-		MoxideVersion:       DefaultMoxideVersion,
-		SemVersion:          DefaultSemVersion,
-		RtkVersion:          DefaultRtkVersion,
-	}
-	configContent := `{"key": "CRUSHCFG value"}`
-	gs := genState{input: input, configContent: configContent}
-	result := GenerateSpec(gs)()
-	require.True(t, E.IsRight(result))
-	spec, _ := E.Unwrap(result)
-
-	assert.Contains(t, spec.spec, "CRUSHCFG1")
-	assert.Contains(t, spec.spec, `{"key": "CRUSHCFG value"}`)
-}
-
-func TestIncrementDelimiter(t *testing.T) {
-	assert.Equal(t, "CRUSHCFG1", incrementDelimiter("CRUSHCFG"))
-	assert.Equal(t, "CRUSHCFG2", incrementDelimiter("CRUSHCFG1"))
-	assert.Equal(t, "CRUSHCFG10", incrementDelimiter("CRUSHCFG9"))
-	assert.Equal(t, "X1", incrementDelimiter("X"))
-	assert.Equal(t, "SKILL2", incrementDelimiter("SKILL1"))
-}
-
 func TestGenerateSkillsEnvVar_WithPath(t *testing.T) {
 	result := generateSkillsEnvVar("/home/agent/crush/skills")
 	assert.Contains(t, result, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
@@ -208,18 +158,7 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 	require.Equal(t, "v3.0.0", data.SemVersion)
 	require.Equal(t, "v1.5.0", data.RtkVersion)
 	require.Equal(t, `{"key":"value"}`, data.ConfigContent)
-	require.Equal(t, "CRUSHCFG", data.ConfigDelimiter)
 	require.Contains(t, data.SkillsEnvVar, "/skills")
-}
-
-func TestBuildSpecData_DelimiterEscaping(t *testing.T) {
-	gs := genState{
-		input:         Input{KitName: "k"},
-		configContent: `contains CRUSHCFG word`,
-	}
-	data := buildSpecData(gs)
-	require.Equal(t, "CRUSHCFG1", data.ConfigDelimiter)
-	require.Equal(t, `contains CRUSHCFG word`, data.ConfigContent)
 }
 
 func TestParseAndRenderTemplate_Success(t *testing.T) {

@@ -98,9 +98,9 @@ commands:
 # Default Crush config
     - command: |
         mkdir -p /home/agent/.config/crush &&
-        cat > /home/agent/.config/crush/crush.json << '{{.ConfigDelimiter}}'
+        cat > /home/agent/.config/crush/crush.json << 'PUNDORIKAKHA'
 {{.ConfigContent}}
-{{.ConfigDelimiter}}
+PUNDORIKAKHA
       user: "1000"
       description: "Create default Crush config"
 

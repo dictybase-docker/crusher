@@ -3,11 +3,12 @@ package containersbx
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
 
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	O "github.com/IBM/fp-go/v2/option"
+	Str "github.com/IBM/fp-go/v2/string"
 )
 
 // specTemplateData holds the data used to render spec.yaml.tmpl.
@@ -21,7 +22,6 @@ type specTemplateData struct {
 	SemVersion          string
 	RtkVersion          string
 	ConfigContent       string
-	ConfigDelimiter     string
 	SkillsEnvVar        string
 }
 
@@ -44,7 +44,6 @@ func GenerateSpec(gs genState) IOE.IOEither[error, genState] {
 
 // buildSpecData constructs the template data from genState. Pure — no I/O.
 func buildSpecData(gs genState) specTemplateData {
-	content, delim := escapeForYAMLLiteral(gs.configContent)
 	return specTemplateData{
 		KitName:             gs.input.KitName,
 		GoVersion:           gs.input.GoVersion,
@@ -55,59 +54,42 @@ func buildSpecData(gs genState) specTemplateData {
 		SemVersion:          gs.input.SemVersion,
 		RtkVersion:          gs.input.RtkVersion,
 		SkillsEnvVar:        generateSkillsEnvVar(gs.input.SkillsAbsPath),
-		ConfigContent:       content,
-		ConfigDelimiter:     delim,
+		ConfigContent:       gs.configContent,
 	}
 }
 
 // parseAndRenderTemplate is a Kleisli arrow: specTemplateData → IOEither[error, string].
-// Mirrors runSbxCommand: one TryCatchError per I/O boundary, composed with Chain.
 func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
-	return F.Pipe1(
+	return F.Pipe2(
 		IOE.TryCatchError(func() (*template.Template, error) {
 			return template.New("spec").Parse(specTemplate)
 		}),
-		IOE.Chain(func(tmpl *template.Template) IOE.IOEither[error, string] {
-			return IOE.TryCatchError(func() (string, error) {
+		IOE.Chain(func(tmpl *template.Template) IOE.IOEither[error, bytes.Buffer] {
+			return IOE.TryCatchError(func() (bytes.Buffer, error) {
 				var buf bytes.Buffer
-				if err := tmpl.Execute(&buf, data); err != nil {
-					return "", err
-				}
-				return buf.String(), nil
+				err := tmpl.Execute(&buf, data)
+				return buf, err
 			})
+		}),
+		IOE.Map[error](func(buf bytes.Buffer) string {
+			return buf.String()
 		}),
 	)
 }
 
-// escapeForYAMLLiteral ensures content doesn't contain the heredoc delimiter "CRUSHCFG".
-// Returns (content, safe delimiter string).
-func escapeForYAMLLiteral(content string) (string, string) {
-	const delimiter = "CRUSHCFG"
-	safe := delimiter
-	for strings.Contains(content, safe) {
-		safe = incrementDelimiter(safe)
-	}
-	return content, safe
-}
-
-// incrementDelimiter appends/increments a numeric suffix on the delimiter.
-func incrementDelimiter(d string) string {
-	// Strip existing numeric suffix
-	base := strings.TrimRight(d, "0123456789")
-	num := strings.TrimPrefix(d, base)
-	if num == "" {
-		return base + "1"
-	}
-	// Parse and increment
-	var n int
-	fmt.Sscanf(num, "%d", &n)
-	return fmt.Sprintf("%s%d", base, n+1)
-}
-
 // generateSkillsEnvVar generates the CRUSH_SKILLS_DIR env var if a skills mount path is set.
 func generateSkillsEnvVar(skillsAbsPath string) string {
-	if skillsAbsPath == "" {
-		return ""
-	}
-	return fmt.Sprintf(`    CRUSH_SKILLS_DIR: %q`, skillsAbsPath) + "\n"
+	return F.Pipe2(
+		skillsAbsPath,
+		O.FromPredicate(Str.IsNonEmpty),
+		O.Fold(
+			F.Constant(""),
+			func(p string) string {
+				return fmt.Sprintf(
+					`    CRUSH_SKILLS_DIR: %q`,
+					p,
+				) + "\n"
+			},
+		),
+	)
 }
