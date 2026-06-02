@@ -97,7 +97,7 @@ func makeTempDirWithSpec(gs genState) IOE.IOEither[error, genState] {
 
 // writeSpecAndBuild writes spec.yaml to the temp dir and builds execState.
 func writeSpecAndBuild(gs genState) IOE.IOEither[error, execState] {
-	return F.Pipe5(
+	return F.Pipe7(
 		gs.tempDir,
 		file.Join("spec.yaml"),
 		FILE.Create,
@@ -105,29 +105,21 @@ func writeSpecAndBuild(gs genState) IOE.IOEither[error, execState] {
 		IOE.MapLeft[[]byte](func(err error) error {
 			return fmt.Errorf("failed to write spec.yaml: %w", err)
 		}),
-		IOE.Chain(func(_ []byte) IOE.IOEither[error, execState] {
-			return buildExecState(gs.input, gs.tempDir)
-		}),
-	)
-}
-
-// buildExecState resolves the output path and constructs the final execState.
-func buildExecState(input Input, tempDir string) IOE.IOEither[error, execState] {
-	return F.Pipe2(
-		IOE.TryCatchError(func() (string, error) {
-			return filepath.Abs(input.OutputPath)
+		IOE.Chain(func(_ []byte) IOE.IOEither[error, string] {
+			return IOE.TryCatchError(func() (string, error) {
+				return filepath.Abs(gs.input.OutputPath)
+			})
 		}),
 		IOE.MapLeft[string](func(err error) error {
-			_ = os.RemoveAll(tempDir)
 			return fmt.Errorf("failed to resolve output path: %w", err)
 		}),
 		IOE.Map[error](func(absOutput string) execState {
 			return execState{
-				Input:      input,
-				TempDir:    tempDir,
+				Input:      gs.input,
+				TempDir:    gs.tempDir,
 				OutputPath: absOutput,
-				KitName:    input.KitName,
-				APIKey:     input.APIKey,
+				KitName:    gs.input.KitName,
+				APIKey:     gs.input.APIKey,
 			}
 		}),
 	)
