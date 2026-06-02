@@ -3,6 +3,7 @@ package containersbx
 import (
 	"testing"
 
+	E "github.com/IBM/fp-go/v2/either"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,16 +20,18 @@ func TestGenerateSpec_MinimalInput(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := DefaultConfig()
-	spec, err := GenerateSpec(input, configContent)
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: configContent}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.Contains(t, spec, "test-sandbox")
-	assert.Contains(t, spec, "openrouter.ai")
-	assert.Contains(t, spec, DefaultGoVersion)
-	assert.Contains(t, spec, DefaultCrushVersion)
-	assert.Contains(t, spec, DefaultGolangciLintVersion)
-	assert.Contains(t, spec, "openrouter")
-	assert.NotContains(t, spec, "{{.")
+	assert.Contains(t, spec.spec, "test-sandbox")
+	assert.Contains(t, spec.spec, "openrouter.ai")
+	assert.Contains(t, spec.spec, DefaultGoVersion)
+	assert.Contains(t, spec.spec, DefaultCrushVersion)
+	assert.Contains(t, spec.spec, DefaultGolangciLintVersion)
+	assert.Contains(t, spec.spec, "openrouter")
+	assert.NotContains(t, spec.spec, "{{.")
 }
 
 func TestGenerateSpec_CustomConfig(t *testing.T) {
@@ -43,13 +46,15 @@ func TestGenerateSpec_CustomConfig(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := `{"model":"custom-model"}`
-	spec, err := GenerateSpec(input, configContent)
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: configContent}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.Contains(t, spec, "custom-sbx")
-	assert.Contains(t, spec, `"model":"custom-model"`)
-	assert.Contains(t, spec, "1.23.0")
-	assert.Contains(t, spec, "v2.0.0")
+	assert.Contains(t, spec.spec, "custom-sbx")
+	assert.Contains(t, spec.spec, `"model":"custom-model"`)
+	assert.Contains(t, spec.spec, "1.23.0")
+	assert.Contains(t, spec.spec, "v2.0.0")
 }
 
 func TestGenerateSpec_WithSkills(t *testing.T) {
@@ -64,10 +69,12 @@ func TestGenerateSpec_WithSkills(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 		SkillsAbsPath:       "/home/agent/crush/skills",
 	}
-	spec, err := GenerateSpec(input, DefaultConfig())
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: DefaultConfig()}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.Contains(t, spec, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
+	assert.Contains(t, spec.spec, `CRUSH_SKILLS_DIR: "/home/agent/crush/skills"`)
 }
 
 func TestGenerateSpec_EmptySkills(t *testing.T) {
@@ -81,12 +88,14 @@ func TestGenerateSpec_EmptySkills(t *testing.T) {
 		SemVersion:          DefaultSemVersion,
 		RtkVersion:          DefaultRtkVersion,
 	}
-	spec, err := GenerateSpec(input, DefaultConfig())
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: DefaultConfig()}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.NotContains(t, spec, "Install skill:")
-	assert.NotContains(t, spec, "## Skills")
-	assert.NotContains(t, spec, "CRUSH_SKILLS_DIR")
+	assert.NotContains(t, spec.spec, "Install skill:")
+	assert.NotContains(t, spec.spec, "## Skills")
+	assert.NotContains(t, spec.spec, "CRUSH_SKILLS_DIR")
 }
 
 func TestGenerateSpec_AllVersions(t *testing.T) {
@@ -100,16 +109,18 @@ func TestGenerateSpec_AllVersions(t *testing.T) {
 		SemVersion:          "v4.0.0",
 		RtkVersion:          "v2.0.0",
 	}
-	spec, err := GenerateSpec(input, DefaultConfig())
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: DefaultConfig()}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.Contains(t, spec, "go1.22.0.linux-amd64")
-	assert.Contains(t, spec, "crush@v3.0.0")
-	assert.Contains(t, spec, `GOLANGCI_LINT_VERSION="2.5.0"`)
-	assert.Contains(t, spec, `gotestsum@v1.0.0`)
-	assert.Contains(t, spec, `markdown-oxide" "v0.5.0"`)
-	assert.Contains(t, spec, `sem" "v4.0.0"`)
-	assert.Contains(t, spec, `rtk" "v2.0.0"`)
+	assert.Contains(t, spec.spec, "go1.22.0.linux-amd64")
+	assert.Contains(t, spec.spec, "crush@v3.0.0")
+	assert.Contains(t, spec.spec, `GOLANGCI_LINT_VERSION="2.5.0"`)
+	assert.Contains(t, spec.spec, `gotestsum@v1.0.0`)
+	assert.Contains(t, spec.spec, `markdown-oxide" "v0.5.0"`)
+	assert.Contains(t, spec.spec, `sem" "v4.0.0"`)
+	assert.Contains(t, spec.spec, `rtk" "v2.0.0"`)
 }
 
 func TestEscapeForYAMLLiteral_NoMatch(t *testing.T) {
@@ -145,11 +156,13 @@ func TestGenerateSpec_ConfigContainsCRUSHCFG(t *testing.T) {
 		RtkVersion:          DefaultRtkVersion,
 	}
 	configContent := `{"key": "CRUSHCFG value"}`
-	spec, err := GenerateSpec(input, configContent)
-	require.NoError(t, err)
+	gs := genState{input: input, configContent: configContent}
+	result := GenerateSpec(gs)()
+	require.True(t, E.IsRight(result))
+	spec, _ := E.Unwrap(result)
 
-	assert.Contains(t, spec, "CRUSHCFG1")
-	assert.Contains(t, spec, `{"key": "CRUSHCFG value"}`)
+	assert.Contains(t, spec.spec, "CRUSHCFG1")
+	assert.Contains(t, spec.spec, `{"key": "CRUSHCFG value"}`)
 }
 
 func TestIncrementDelimiter(t *testing.T) {

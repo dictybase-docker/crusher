@@ -8,9 +8,9 @@ import (
 )
 
 // ReadConfig reads the user's crush.json or returns the default OpenRouter config.
-func ReadConfig(configPath string) IOE.IOEither[error, string] {
-	return F.Pipe2(
-		configPath,
+func ReadConfig(enriched Input) IOE.IOEither[error, genState] {
+	return F.Pipe3(
+		enriched.ConfigPath,
 		// string -> Option[string]  (None if blank)
 		O.FromPredicate(isNonBlank),
 		// Option[string] -> IOEither[error, string]
@@ -27,6 +27,13 @@ func ReadConfig(configPath string) IOE.IOEither[error, string] {
 				)
 			},
 		),
+		// string -> genState
+		IOE.Map[error](func(configContent string) genState {
+			return genState{
+				input:         enriched,
+				configContent: configContent,
+			}
+		}),
 	)
 }
 
