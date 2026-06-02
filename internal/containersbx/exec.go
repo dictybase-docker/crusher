@@ -149,26 +149,24 @@ func validateKit(state execState) IOE.IOEither[error, execState] {
 
 // storeSecret runs "sbx secret set openrouter" using the API key via stdin.
 func storeSecret(state execState) IOE.IOEither[error, execState] {
-	return F.Pipe2(
-		IOE.TryCatchError(func() (F.Void, error) {
-			bin, err := exec.LookPath(sbxBinary)
-			if err != nil {
-				return F.VOID, fmt.Errorf(
-					"sbx not found in PATH; install it from https://docs.docker.com/sbx/: %w",
-					err,
-				)
-			}
-			cmd := &exec.Cmd{
-				Path:   bin,
-				Args:   []string{bin, "secret", "set", "openrouter"},
-				Stdin:  strings.NewReader(state.APIKey + "\n"),
-				Stdout: os.Stdout,
-				Stderr: os.Stderr,
-			}
-			return F.VOID, cmd.Run()
+	return F.Pipe3(
+		IOE.TryCatchError(func() (string, error) {
+			return exec.LookPath(sbxBinary)
+		}),
+		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
+			return IOE.TryCatchError(func() (F.Void, error) {
+				cmd := &exec.Cmd{
+					Path:   bin,
+					Args:   []string{bin, "secret", "set", "openrouter"},
+					Stdin:  strings.NewReader(state.APIKey + "\n"),
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				}
+				return F.VOID, cmd.Run()
+			})
 		}),
 		IOE.MapLeft[F.Void](func(err error) error {
-			return fmt.Errorf("sbx secret set failed: %w", err)
+			return fmt.Errorf("sbx command failed: %w", err)
 		}),
 		IOE.Map[error](func(F.Void) execState { return state }),
 	)
@@ -189,28 +187,44 @@ func packKit(state execState) IOE.IOEither[error, execState] {
 	)
 }
 
+// buildCreateArgs renders the args slice for "sbx create" with an optional --workspace flag.
+func buildCreateArgs(state execState) []string {
+	return F.Pipe2(
+		state.SkillsAbsPath,
+		O.FromPredicate(Str.IsNonEmpty),
+		O.Fold(
+			func() []string {
+				return []string{"create", state.KitName, "--kit", state.OutputPath}
+			},
+			func(p string) []string {
+				return []string{"create", state.KitName, "--kit", state.OutputPath, p + ":ro"}
+			},
+		),
+	)
+}
+
 // createSandboxOrSkip runs "sbx create <name> --kit <outputPath>" if ShouldCreate.
-// If SkillsAbsPath is set, it's appended as a read-only workspace.
 func createSandboxOrSkip(state execState) IOE.IOEither[error, execState] {
-	if !state.ShouldCreate {
-		return IOE.Of[error](state)
-	}
-	args := []string{
-		"create", state.KitName,
-		"--kit", state.OutputPath,
-	}
-	if state.SkillsAbsPath != "" {
-		args = append(args, state.SkillsAbsPath+":ro")
-	}
-	return F.Pipe1(
-		runSbxCommand(CommandSpec{
-			Bin:  sbxBinary,
-			Args: args,
-		}),
-		IOE.Map[error](func(F.Void) execState {
-			state.Result.Created = true
-			return state
-		}),
+	return F.Pipe2(
+		state.ShouldCreate,
+		O.FromPredicate(F.Identity[bool]),
+		O.Fold(
+			func() IOE.IOEither[error, execState] {
+				return IOE.Of[error](state)
+			},
+			func(_ bool) IOE.IOEither[error, execState] {
+				return F.Pipe1(
+					runSbxCommand(CommandSpec{
+						Bin:  sbxBinary,
+						Args: buildCreateArgs(state),
+					}),
+					IOE.Map[error](func(F.Void) execState {
+						state.Result.Created = true
+						return state
+					}),
+				)
+			},
+		),
 	)
 }
 
