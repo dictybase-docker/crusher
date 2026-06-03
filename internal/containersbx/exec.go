@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/IBM/fp-go/v2/file"
 	F "github.com/IBM/fp-go/v2/function"
@@ -26,7 +27,7 @@ type stepState struct {
 	Run   processRunner
 }
 
-// Execute runs the full pipeline: generate → validate → pack → optionally create.
+// Execute runs the full pipeline: generate → validate → store secret → pack → optionally create.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
 	return F.Pipe7(
 		input,
@@ -40,6 +41,34 @@ func Execute(input Input) IOE.IOEither[error, KitResult] {
 		IOE.Chain(createSandboxOrSkip),
 		IOE.Map[error](func(ss stepState) KitResult {
 			return ss.State.Result
+		}),
+	)
+}
+
+// runSbxCommand executes an sbx CLI command, optionally piping stdin content.
+func runSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
+	return F.Pipe2(
+		IOE.TryCatchError(func() (string, error) {
+			return exec.LookPath(spec.Bin)
+		}),
+		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
+			return IOE.TryCatchError(func() (F.Void, error) {
+				cmd := &exec.Cmd{
+					Path:   bin,
+					Args:   append([]string{bin}, spec.Args...),
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				}
+
+				if spec.Stdin != "" {
+					cmd.Stdin = strings.NewReader(spec.Stdin)
+				}
+
+				return F.VOID, cmd.Run()
+			})
+		}),
+		IOE.MapLeft[F.Void](func(err error) error {
+			return fmt.Errorf("sbx command failed: %w", err)
 		}),
 	)
 }
@@ -159,12 +188,13 @@ func validateKit(ss stepState) IOE.IOEither[error, stepState] {
 	)
 }
 
-// storeSecret runs "sbx secret set openrouter".
+// storeSecret pipes the API key via stdin to "sbx secret set openrouter".
 func storeSecret(ss stepState) IOE.IOEither[error, stepState] {
 	return F.Pipe1(
 		ss.Run(CommandSpec{
-			Bin:  sbxBinary,
-			Args: []string{"secret", "set", "openrouter"},
+			Bin:   sbxBinary,
+			Args:  []string{"secret", "set", "openrouter"},
+			Stdin: ss.State.APIKey + "\n",
 		}),
 		IOE.Map[error](func(F.Void) stepState { return ss }),
 	)
@@ -224,29 +254,5 @@ func createSandboxOrSkip(ss stepState) IOE.IOEither[error, stepState] {
 				)
 			},
 		),
-	)
-}
-
-// runSbxCommand executes an sbx CLI command.
-func runSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
-	return F.Pipe2(
-		IOE.TryCatchError(func() (string, error) {
-			return exec.LookPath(spec.Bin)
-		}),
-		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
-			return IOE.TryCatchError(func() (F.Void, error) {
-				cmd := &exec.Cmd{
-					Path:   bin,
-					Args:   append([]string{bin}, spec.Args...),
-					Stdout: os.Stdout,
-					Stderr: os.Stderr,
-				}
-
-				return F.VOID, cmd.Run()
-			})
-		}),
-		IOE.MapLeft[F.Void](func(err error) error {
-			return fmt.Errorf("sbx command failed: %w", err)
-		}),
 	)
 }

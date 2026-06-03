@@ -65,10 +65,11 @@ type ResolvedInput struct {
 	Ctx          context.Context
 }
 
-// CommandSpec holds a resolved executable and argv slice.
+// CommandSpec holds a resolved executable, argv slice, and optional stdin.
 type CommandSpec struct {
-	Bin  string   // "sbx"
-	Args []string // Full argument list
+	Bin   string   // "sbx"
+	Args  []string // Full argument list
+	Stdin string   // Optional stdin content (piped to process stdin)
 }
 
 // KitResult holds the result of kit generation and optional sandbox creation.
