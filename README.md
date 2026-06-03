@@ -1,7 +1,7 @@
 # crusher
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/cybersiddhu/crush-sandbox.svg)](https://pkg.go.dev/github.com/cybersiddhu/crush-sandbox)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cybersiddhu/crush-sandbox)](https://goreportcard.com/report/github.com/cybersiddhu/crush-sandbox)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dictybase-docker/crusher)](https://goreportcard.com/report/github.com/dictybase-docker/crusher)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 CLI tool for building OCI images, creating Crush sandbox containers, and packing Docker Sandbox agent kits — all powered by functional programming combinators.
