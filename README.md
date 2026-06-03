@@ -1,6 +1,6 @@
 # crusher
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cybersiddhu/crush-sandbox.svg)](https://pkg.go.dev/github.com/cybersiddhu/crush-sandbox)
+[![Go Reference](https://pkg.go.dev/badge/github.com/dictybase-docker/crusher.svg)](https://pkg.go.dev/github.com/dictybase-docker/crusher)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dictybase-docker/crusher)](https://goreportcard.com/report/github.com/dictybase-docker/crusher)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -26,13 +26,13 @@ CLI tool for building OCI images, creating Crush sandbox containers, and packing
 ## Install
 
 ```bash
-go install github.com/cybersiddhu/crush-sandbox/cmd/crusher@latest
+go install github.com/dictybase-docker/crusher/cmd/crusher@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/cybersiddhu/crush-sandbox.git
+git clone https://github.com/dictybase-docker/crusher.git
 cd crush-sandbox
 go build -o crusher ./cmd/crusher
 ```

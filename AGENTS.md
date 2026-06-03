@@ -4,7 +4,7 @@
 
 Go CLI application (`container-cli`) that wraps Apple's [`container build`](https://github.com/apple/container) command for building OCI images. The application layer uses **functional programming** via `github.com/IBM/fp-go/v2` — no imperative branching in application code.
 
-- **Module**: `github.com/cybersiddhu/crush-sandbox`
+- **Module**: `github.com/dictybase-docker/crusher`
 - **Go version**: `1.25.7`
 - **Binary name**: `container-cli`
 

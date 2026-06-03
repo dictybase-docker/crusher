@@ -1,4 +1,4 @@
-module github.com/cybersiddhu/crush-sandbox
+module github.com/dictybase-docker/crusher
 
 go 1.25
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cybersiddhu/crush-sandbox/internal/containerbuild"
-	"github.com/cybersiddhu/crush-sandbox/internal/containercreate"
-	"github.com/cybersiddhu/crush-sandbox/internal/containersbx"
+	"github.com/dictybase-docker/crusher/internal/containerbuild"
+	"github.com/dictybase-docker/crusher/internal/containercreate"
+	"github.com/dictybase-docker/crusher/internal/containersbx"
 	"github.com/urfave/cli/v3"
 )
 

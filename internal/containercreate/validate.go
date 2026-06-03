@@ -18,7 +18,7 @@ import (
 	Pred "github.com/IBM/fp-go/v2/predicate"
 	Str "github.com/IBM/fp-go/v2/string"
 
-	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
+	FP "github.com/dictybase-docker/crusher/internal/fp"
 )
 
 var (

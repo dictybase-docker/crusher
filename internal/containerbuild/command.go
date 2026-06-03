@@ -11,7 +11,7 @@ import (
 	O "github.com/IBM/fp-go/v2/option"
 	P "github.com/IBM/fp-go/v2/pair"
 	R "github.com/IBM/fp-go/v2/record"
-	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
+	FP "github.com/dictybase-docker/crusher/internal/fp"
 	"github.com/urfave/cli/v3"
 )
 

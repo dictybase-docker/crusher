@@ -8,7 +8,7 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	P "github.com/IBM/fp-go/v2/pair"
 	Str "github.com/IBM/fp-go/v2/string"
-	FP "github.com/cybersiddhu/crush-sandbox/internal/fp"
+	FP "github.com/dictybase-docker/crusher/internal/fp"
 	"github.com/gookit/color"
 	"github.com/urfave/cli/v3"
 )
