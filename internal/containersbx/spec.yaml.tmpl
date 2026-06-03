@@ -7,7 +7,6 @@ description: Charmbracelet Crush — agentic coding with OpenRouter
 agent:
   image: "docker/sandbox-templates:shell-docker"
   aiFilename: AGENTS.md
-  persistence: persistent
   entrypoint:
     run: [crush]
 
@@ -132,7 +131,7 @@ credentials:
 environment:
   proxyManaged:
     - OPENROUTER_API_KEY
-  vars:
+  variables:
     CRUSH_SHORT_TOOL_DESCRIPTIONS: "1"
     PATH: "/home/agent/.local/bin:/usr/local/go/bin:${PATH}"
     HOME: "/home/agent"
