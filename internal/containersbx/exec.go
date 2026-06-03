@@ -28,17 +28,11 @@ type stepState struct {
 
 // Execute runs the full pipeline: generate → validate → pack → optionally create.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
-	return executeWith(runSbxCommand, input)
-}
-
-// executeWith is the internal parameterized variant that accepts a
-// processRunner, enabling unit tests to inject stubs for each stage.
-func executeWith(run processRunner, input Input) IOE.IOEither[error, KitResult] {
 	return F.Pipe7(
 		input,
 		generateToTempDir,
 		IOE.Map[error](func(es execState) stepState {
-			return stepState{State: es, Run: run}
+			return stepState{State: es, Run: runSbxCommand}
 		}),
 		IOE.Chain(validateKit),
 		IOE.Chain(storeSecret),
