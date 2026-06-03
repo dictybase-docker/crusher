@@ -19,6 +19,13 @@ import (
 // of test doubles.
 type processRunner func(spec CommandSpec) IOE.IOEither[error, F.Void]
 
+// stepState pairs the domain state with the process runner, enabling a fully
+// univariate pipeline where every handler is stepState → IOE[stepState].
+type stepState struct {
+	State execState
+	Run   processRunner
+}
+
 // Execute runs the full pipeline: generate → validate → pack → optionally create.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
 	return executeWith(runSbxCommand, input)
@@ -27,15 +34,18 @@ func Execute(input Input) IOE.IOEither[error, KitResult] {
 // executeWith is the internal parameterized variant that accepts a
 // processRunner, enabling unit tests to inject stubs for each stage.
 func executeWith(run processRunner, input Input) IOE.IOEither[error, KitResult] {
-	return F.Pipe6(
+	return F.Pipe7(
 		input,
 		generateToTempDir,
-		IOE.Chain(validateKitWith(run)),
-		IOE.Chain(storeSecretWith(run)),
-		IOE.Chain(packKitWith(run)),
-		IOE.Chain(createSandboxOrSkipWith(run)),
-		IOE.Map[error](func(state execState) KitResult {
-			return state.Result
+		IOE.Map[error](func(es execState) stepState {
+			return stepState{State: es, Run: run}
+		}),
+		IOE.Chain(validateKit),
+		IOE.Chain(storeSecret),
+		IOE.Chain(packKit),
+		IOE.Chain(createSandboxOrSkip),
+		IOE.Map[error](func(ss stepState) KitResult {
+			return ss.State.Result
 		}),
 	)
 }
@@ -144,91 +154,83 @@ func generateToTempDir(input Input) IOE.IOEither[error, execState] {
 	)
 }
 
-// validateKitWith returns a Kleisli arrow for kit validation.
-func validateKitWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
-	return func(state execState) IOE.IOEither[error, execState] {
-		return F.Pipe1(
-			run(CommandSpec{
-				Bin:  sbxBinary,
-				Args: []string{"kit", "validate", state.TempDir},
-			}),
-			IOE.Map[error](func(F.Void) execState { return state }),
-		)
-	}
+// validateKit runs "sbx kit validate" against the temp dir.
+func validateKit(ss stepState) IOE.IOEither[error, stepState] {
+	return F.Pipe1(
+		ss.Run(CommandSpec{
+			Bin:  sbxBinary,
+			Args: []string{"kit", "validate", ss.State.TempDir},
+		}),
+		IOE.Map[error](func(F.Void) stepState { return ss }),
+	)
 }
 
-// storeSecretWith returns a Kleisli arrow for secret storage (testable variant).
-func storeSecretWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
-	return func(state execState) IOE.IOEither[error, execState] {
-		return F.Pipe1(
-			run(CommandSpec{
-				Bin:  sbxBinary,
-				Args: []string{"secret", "set", "openrouter"},
-			}),
-			IOE.Map[error](func(F.Void) execState { return state }),
-		)
-	}
+// storeSecret runs "sbx secret set openrouter".
+func storeSecret(ss stepState) IOE.IOEither[error, stepState] {
+	return F.Pipe1(
+		ss.Run(CommandSpec{
+			Bin:  sbxBinary,
+			Args: []string{"secret", "set", "openrouter"},
+		}),
+		IOE.Map[error](func(F.Void) stepState { return ss }),
+	)
 }
 
-// packKitWith returns a Kleisli arrow for kit packing.
-func packKitWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
-	return func(state execState) IOE.IOEither[error, execState] {
-		return F.Pipe1(
-			run(CommandSpec{
-				Bin:  sbxBinary,
-				Args: []string{"kit", "pack", state.TempDir, "-o", state.OutputPath},
-			}),
-			IOE.Map[error](func(F.Void) execState {
-				state.Result.OutputPath = state.OutputPath
-				state.Result.KitName = state.KitName
+// packKit runs "sbx kit pack" to produce the output zip.
+func packKit(ss stepState) IOE.IOEither[error, stepState] {
+	return F.Pipe1(
+		ss.Run(CommandSpec{
+			Bin:  sbxBinary,
+			Args: []string{"kit", "pack", ss.State.TempDir, "-o", ss.State.OutputPath},
+		}),
+		IOE.Map[error](func(F.Void) stepState {
+			ss.State.Result.OutputPath = ss.State.OutputPath
+			ss.State.Result.KitName = ss.State.KitName
 
-				return state
-			}),
-		)
-	}
+			return ss
+		}),
+	)
 }
 
 // buildCreateArgs renders the args slice for "sbx create" with an optional --workspace flag.
-func buildCreateArgs(state execState) []string {
+func buildCreateArgs(ss stepState) []string {
 	return F.Pipe2(
-		state.SkillsAbsPath,
+		ss.State.SkillsAbsPath,
 		O.FromPredicate(Str.IsNonEmpty),
 		O.Fold(
 			func() []string {
-				return []string{"create", state.KitName, "--kit", state.OutputPath}
+				return []string{"create", ss.State.KitName, "--kit", ss.State.OutputPath}
 			},
 			func(p string) []string {
-				return []string{"create", state.KitName, "--kit", state.OutputPath, p + ":ro"}
+				return []string{"create", ss.State.KitName, "--kit", ss.State.OutputPath, p + ":ro"}
 			},
 		),
 	)
 }
 
-// createSandboxOrSkipWith returns a Kleisli arrow for sandbox creation.
-func createSandboxOrSkipWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
-	return func(state execState) IOE.IOEither[error, execState] {
-		return F.Pipe2(
-			state.ShouldCreate,
-			O.FromPredicate(F.Identity[bool]),
-			O.Fold(
-				func() IOE.IOEither[error, execState] {
-					return IOE.Of[error](state)
-				},
-				func(_ bool) IOE.IOEither[error, execState] {
-					return F.Pipe1(
-						run(CommandSpec{
-							Bin:  sbxBinary,
-							Args: buildCreateArgs(state),
-						}),
-						IOE.Map[error](func(F.Void) execState {
-							state.Result.Created = true
-							return state
-						}),
-					)
-				},
-			),
-		)
-	}
+// createSandboxOrSkip runs "sbx create" when ShouldCreate is true, otherwise a nop.
+func createSandboxOrSkip(ss stepState) IOE.IOEither[error, stepState] {
+	return F.Pipe2(
+		ss.State.ShouldCreate,
+		O.FromPredicate(F.Identity[bool]),
+		O.Fold(
+			func() IOE.IOEither[error, stepState] {
+				return IOE.Of[error](ss)
+			},
+			func(_ bool) IOE.IOEither[error, stepState] {
+				return F.Pipe1(
+					ss.Run(CommandSpec{
+						Bin:  sbxBinary,
+						Args: buildCreateArgs(ss),
+					}),
+					IOE.Map[error](func(F.Void) stepState {
+						ss.State.Result.Created = true
+						return ss
+					}),
+				)
+			},
+		),
+	)
 }
 
 // runSbxCommand executes an sbx CLI command.
