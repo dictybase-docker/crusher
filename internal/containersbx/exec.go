@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/IBM/fp-go/v2/file"
 	F "github.com/IBM/fp-go/v2/function"
@@ -154,11 +153,6 @@ func generateToTempDir(input Input) IOE.IOEither[error, execState] {
 	)
 }
 
-// validateKit runs "sbx kit validate <tempDir>".
-func validateKit(state execState) IOE.IOEither[error, execState] {
-	return validateKitWith(runSbxCommand)(state)
-}
-
 // validateKitWith returns a Kleisli arrow for kit validation.
 func validateKitWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
 	return func(state execState) IOE.IOEither[error, execState] {
@@ -172,31 +166,6 @@ func validateKitWith(run processRunner) func(execState) IOE.IOEither[error, exec
 	}
 }
 
-// storeSecret runs "sbx secret set openrouter" using the API key via stdin.
-func storeSecret(state execState) IOE.IOEither[error, execState] {
-	return F.Pipe3(
-		IOE.TryCatchError(func() (string, error) {
-			return exec.LookPath(sbxBinary)
-		}),
-		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
-			return IOE.TryCatchError(func() (F.Void, error) {
-				cmd := &exec.Cmd{
-					Path:   bin,
-					Args:   []string{bin, "secret", "set", "openrouter"},
-					Stdin:  strings.NewReader(state.APIKey + "\n"),
-					Stdout: os.Stdout,
-					Stderr: os.Stderr,
-				}
-				return F.VOID, cmd.Run()
-			})
-		}),
-		IOE.MapLeft[F.Void](func(err error) error {
-			return fmt.Errorf("sbx command failed: %w", err)
-		}),
-		IOE.Map[error](func(F.Void) execState { return state }),
-	)
-}
-
 // storeSecretWith returns a Kleisli arrow for secret storage (testable variant).
 func storeSecretWith(run processRunner) func(execState) IOE.IOEither[error, execState] {
 	return func(state execState) IOE.IOEither[error, execState] {
@@ -208,11 +177,6 @@ func storeSecretWith(run processRunner) func(execState) IOE.IOEither[error, exec
 			IOE.Map[error](func(F.Void) execState { return state }),
 		)
 	}
-}
-
-// packKit runs "sbx kit pack <tempDir> -o <outputPath>".
-func packKit(state execState) IOE.IOEither[error, execState] {
-	return packKitWith(runSbxCommand)(state)
 }
 
 // packKitWith returns a Kleisli arrow for kit packing.
@@ -246,11 +210,6 @@ func buildCreateArgs(state execState) []string {
 			},
 		),
 	)
-}
-
-// createSandboxOrSkip runs "sbx create <name> --kit <outputPath>" if ShouldCreate.
-func createSandboxOrSkip(state execState) IOE.IOEither[error, execState] {
-	return createSandboxOrSkipWith(runSbxCommand)(state)
 }
 
 // createSandboxOrSkipWith returns a Kleisli arrow for sandbox creation.

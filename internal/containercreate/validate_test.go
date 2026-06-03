@@ -265,3 +265,21 @@ func TestIsReservedBasename(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateVolumePath_Blank(t *testing.T) {
+	require := require.New(t)
+	result := validateVolumePath("")
+	require.True(E.IsLeft(result))
+
+	err := E.Fold(F.Identity[error], func(string) error { return nil })(result)
+	require.EqualError(err, "volume path cannot be blank")
+}
+
+func TestResolveAbsolutePath_NonExistent(t *testing.T) {
+	require := require.New(t)
+	result := resolveAbsolutePath("/nonexistent/crush-test-path-xyz")
+	require.True(E.IsLeft(result))
+
+	err := E.Fold(F.Identity[error], func(string) error { return nil })(result)
+	require.Contains(err.Error(), "path validation failed")
+}

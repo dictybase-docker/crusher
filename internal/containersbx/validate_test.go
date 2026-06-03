@@ -135,3 +135,9 @@ func TestValidateInput_ValidWithConfigPath(t *testing.T) {
 	either := ValidateInput(input)
 	assert.True(t, E.IsRight(either))
 }
+
+func TestValidateOutputParent_EmptyPath(t *testing.T) {
+	input := Input{APIKey: "test-key", OutputPath: ""}
+	either := validateOutputParent(input)
+	assert.True(t, E.IsRight(either))
+}

@@ -12,7 +12,7 @@ func TestInputFromCommand_Defaults(t *testing.T) {
 	require := require.New(t)
 	app := &cli.Command{
 		Flags: Command().Flags,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
+		Action: func(_ context.Context, _ *cli.Command) error {
 			require.Fail("should not reach action without required api-key")
 			return nil
 		},
@@ -66,7 +66,8 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"sbx",
+	_ = app.Run(context.Background(), []string{
+		"sbx",
 		"--output", "/tmp/output.zip",
 		"--config", "/path/to/crush.json",
 		"--skills", "/path/to/skills",
@@ -107,7 +108,8 @@ func TestInputFromCommand_ShortFlags(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"sbx",
+	_ = app.Run(context.Background(), []string{
+		"sbx",
 		"-o", "/tmp/out.zip",
 		"-c", "/path/cfg.json",
 		"-s", "/path/skills",

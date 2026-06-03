@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeSbxRunner(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeSbxRunner(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Of[error](F.VOID)
 }
 
-func fakeSbxRunnerFail(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeSbxRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Left[F.Void](errors.New("sbx command failed"))
 }
 
@@ -65,10 +65,43 @@ func TestResolveSkillsPath_EmptyPath(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) Input { return Input{} },
+		func(_ error) Input { return Input{} },
 		F.Identity[Input],
 	)(either)
 	require.Empty(result.SkillsAbsPath)
+}
+
+func TestResolveSkillsPath_NonEmptyPath(t *testing.T) {
+	require := require.New(t)
+	tmpDir := t.TempDir()
+	input := Input{SkillsPath: tmpDir}
+
+	either := resolveSkillsPath(input)()
+	require.True(E.IsRight(either))
+
+	result := E.Fold(
+		func(_ error) Input { return Input{} },
+		F.Identity[Input],
+	)(either)
+	require.Equal(tmpDir, result.SkillsAbsPath)
+}
+
+func TestExecuteWith_Success(t *testing.T) {
+	require := require.New(t)
+	result := executeWith(fakeSbxRunner, Input{KitName: "test-kit"})()
+	require.True(E.IsRight(result))
+
+	kr := E.Fold(
+		func(_ error) KitResult { return KitResult{} },
+		F.Identity[KitResult],
+	)(result)
+	require.Equal("test-kit", kr.KitName)
+}
+
+func TestExecuteWith_RunnerFails(t *testing.T) {
+	require := require.New(t)
+	result := executeWith(fakeSbxRunnerFail, Input{KitName: "test-kit"})()
+	require.True(E.IsLeft(result))
 }
 
 func TestValidateKitWith_Success(t *testing.T) {
@@ -81,7 +114,7 @@ func TestValidateKitWith_Success(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) execState { return execState{} },
+		func(_ error) execState { return execState{} },
 		F.Identity[execState],
 	)(either)
 	require.Equal("/tmp/sbx-test", result.TempDir)
@@ -113,7 +146,7 @@ func TestStoreSecretWith_Success(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) execState { return execState{} },
+		func(_ error) execState { return execState{} },
 		F.Identity[execState],
 	)(either)
 	require.Equal("sk-abc123", result.APIKey)
@@ -147,7 +180,7 @@ func TestPackKitWith_Success(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) execState { return execState{} },
+		func(_ error) execState { return execState{} },
 		F.Identity[execState],
 	)(either)
 	require.Equal("/tmp/kit.zip", result.Result.OutputPath)
@@ -186,7 +219,7 @@ func TestCreateSandboxOrSkipWith_Skip(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) execState { return execState{} },
+		func(_ error) execState { return execState{} },
 		F.Identity[execState],
 	)(either)
 	require.False(result.Result.Created)
@@ -206,7 +239,7 @@ func TestCreateSandboxOrSkipWith_Create(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) execState { return execState{} },
+		func(_ error) execState { return execState{} },
 		F.Identity[execState],
 	)(either)
 	require.True(result.Result.Created)

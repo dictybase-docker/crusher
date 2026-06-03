@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeRunner(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeRunner(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Of[error](F.VOID)
 }
 
-func fakeRunnerFail(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Left[F.Void](errors.New("container command failed"))
 }
 
@@ -35,7 +35,7 @@ func TestExecuteWith_HappyPath(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(e error) ContainerResult { return ContainerResult{} },
+		func(_ error) ContainerResult { return ContainerResult{} },
 		F.Identity[ContainerResult],
 	)(either)
 	require.Equal("my-container", result.Name)
@@ -72,7 +72,7 @@ func TestStartContainerWith_HappyPath(t *testing.T) {
 	require.True(E.IsRight(either))
 
 	out := E.Fold(
-		func(e error) ContainerResult { return ContainerResult{} },
+		func(_ error) ContainerResult { return ContainerResult{} },
 		F.Identity[ContainerResult],
 	)(either)
 	require.Equal("my-container", out.Name)

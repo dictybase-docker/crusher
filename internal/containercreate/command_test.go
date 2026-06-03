@@ -12,7 +12,7 @@ func TestInputFromCommand_Defaults(t *testing.T) {
 	require := require.New(t)
 	app := &cli.Command{
 		Flags: Command().Flags,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
+		Action: func(_ context.Context, _ *cli.Command) error {
 			require.Fail("should not reach action without required flags")
 			return nil
 		},
@@ -37,7 +37,8 @@ func TestInputFromCommand_MinimalInput(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"create",
+	_ = app.Run(context.Background(), []string{
+		"create",
 		"--config", "/host/config",
 		"--data", "/host/data",
 		"--skills", "/host/skills",
@@ -62,7 +63,8 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"create",
+	_ = app.Run(context.Background(), []string{
+		"create",
 		"--image", "myimage:v2",
 		"--name", "mycontainer",
 		"--config", "/host/config",
@@ -84,7 +86,8 @@ func TestInputFromCommand_VolumesFlag(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"create",
+	_ = app.Run(context.Background(), []string{
+		"create",
 		"--config", "/host/config",
 		"--data", "/host/data",
 		"--skills", "/host/skills",
@@ -104,7 +107,8 @@ func TestInputFromCommand_ImageShortFlag(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"create",
+	_ = app.Run(context.Background(), []string{
+		"create",
 		"-i", "myimage:latest",
 		"--config", "/host/config",
 		"--data", "/host/data",

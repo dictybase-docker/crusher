@@ -37,7 +37,10 @@ func StartContainer(result ContainerResult) IOE.IOEither[error, ContainerResult]
 }
 
 // startContainerWith is the internal parameterized variant for testability.
-func startContainerWith(run processRunner, result ContainerResult) IOE.IOEither[error, ContainerResult] {
+func startContainerWith(
+	run processRunner,
+	result ContainerResult,
+) IOE.IOEither[error, ContainerResult] {
 	return F.Pipe2(
 		CommandSpec{
 			Bin:  containerBinary,

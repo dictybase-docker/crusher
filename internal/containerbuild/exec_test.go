@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func fakeRunner(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeRunner(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Of[error](F.VOID)
 }
 
-func fakeRunnerFail(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Left[F.Void](errors.New("build failed"))
 }
 

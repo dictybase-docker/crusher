@@ -14,7 +14,7 @@ func TestToEither_Right(t *testing.T) {
 	require.True(t, E.IsRight(result))
 
 	val := E.Fold(
-		func(e error) int { return -1 },
+		func(_ error) int { return -1 },
 		func(v int) int { return v },
 	)(result)
 	require.Equal(t, 42, val)

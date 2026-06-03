@@ -40,7 +40,10 @@ func TestInputFromCommand_CustomNameAndTags(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"build", "--name", "myimage", "--tag", "v1", "--tag", "v2"})
+	_ = app.Run(
+		context.Background(),
+		[]string{"build", "--name", "myimage", "--tag", "v1", "--tag", "v2"},
+	)
 }
 
 func TestInputFromCommand_EmbedFlag(t *testing.T) {
@@ -82,7 +85,8 @@ func TestInputFromCommand_VersionFlags(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"build",
+	_ = app.Run(context.Background(), []string{
+		"build",
 		"--golangci-lint-version", "3.0.0",
 		"--crush-version", "v2",
 		"--gotestsum-version", "1.5.0",

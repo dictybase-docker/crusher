@@ -5,7 +5,6 @@ package containersbx
 
 import (
 	"context"
-	"os"
 )
 
 const (
@@ -35,9 +34,6 @@ const (
 
 	// sbxBinary is the name of the sbx CLI binary.
 	sbxBinary = "sbx"
-
-	// filePerm is the permission mode for spec.yaml.
-	filePerm os.FileMode = 0o600
 )
 
 // Input holds all parameters for kit generation and optional sandbox creation.
