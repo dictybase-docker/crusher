@@ -9,12 +9,22 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 )
 
+// processRunner is a type alias for a subprocess runner, enabling injection
+// of test doubles.
+type processRunner func(spec CommandSpec) IOE.IOEither[error, F.Void]
+
 // Execute runs the container create command and returns the result.
 func Execute(rinput ResolvedInput) IOE.IOEither[error, ContainerResult] {
+	return executeWith(runProcess, rinput)
+}
+
+// executeWith is the internal parameterized variant that accepts a
+// processRunner, enabling unit tests to inject a stub.
+func executeWith(run processRunner, rinput ResolvedInput) IOE.IOEither[error, ContainerResult] {
 	return F.Pipe3(
 		rinput,
 		RenderCommand,
-		runProcess,
+		run,
 		IOE.Map[error](func(F.Void) ContainerResult {
 			return ContainerResult{Name: rinput.ContainerName}
 		}),
@@ -23,12 +33,17 @@ func Execute(rinput ResolvedInput) IOE.IOEither[error, ContainerResult] {
 
 // StartContainer runs the container start command for a created container.
 func StartContainer(result ContainerResult) IOE.IOEither[error, ContainerResult] {
+	return startContainerWith(runProcess, result)
+}
+
+// startContainerWith is the internal parameterized variant for testability.
+func startContainerWith(run processRunner, result ContainerResult) IOE.IOEither[error, ContainerResult] {
 	return F.Pipe2(
 		CommandSpec{
 			Bin:  containerBinary,
 			Args: []string{"start", result.Name},
 		},
-		runProcess,
+		run,
 		IOE.Map[error](func(F.Void) ContainerResult {
 			return result
 		}),
