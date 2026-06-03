@@ -19,7 +19,7 @@ import (
 // of test doubles.
 type processRunner func(spec CommandSpec) IOE.IOEither[error, F.Void]
 
-// Execute runs the full pipeline: generate → validate → pack → optionally create → cleanup.
+// Execute runs the full pipeline: generate → validate → pack → optionally create.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
 	return executeWith(runSbxCommand, input)
 }
@@ -27,22 +27,13 @@ func Execute(input Input) IOE.IOEither[error, KitResult] {
 // executeWith is the internal parameterized variant that accepts a
 // processRunner, enabling unit tests to inject stubs for each stage.
 func executeWith(run processRunner, input Input) IOE.IOEither[error, KitResult] {
-	return F.Pipe8(
+	return F.Pipe6(
 		input,
 		generateToTempDir,
 		IOE.Chain(validateKitWith(run)),
 		IOE.Chain(storeSecretWith(run)),
 		IOE.Chain(packKitWith(run)),
 		IOE.Chain(createSandboxOrSkipWith(run)),
-		IOE.Chain(func(state execState) IOE.IOEither[error, execState] {
-			return IOE.TryCatchError(func() (execState, error) {
-				err := os.RemoveAll(state.TempDir)
-				return state, err
-			})
-		}),
-		IOE.MapLeft[execState](func(err error) error {
-			return fmt.Errorf("failed to cleanup temp dir: %w", err)
-		}),
 		IOE.Map[error](func(state execState) KitResult {
 			return state.Result
 		}),
