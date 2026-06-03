@@ -98,9 +98,7 @@ commands:
 # Default Crush config
     - command: |
         mkdir -p /home/agent/.config/crush &&
-        cat > /home/agent/.config/crush/crush.json << 'PUNDORIKAKHA'
-{{.ConfigContent}}
-PUNDORIKAKHA
+        echo {{.ConfigContentB64}} | base64 -d > /home/agent/.config/crush/crush.json
       user: "1000"
       description: "Create default Crush config"
 

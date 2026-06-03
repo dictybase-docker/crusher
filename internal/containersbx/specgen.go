@@ -2,6 +2,7 @@ package containersbx
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"text/template"
 
@@ -21,7 +22,7 @@ type specTemplateData struct {
 	MoxideVersion       string
 	SemVersion          string
 	RtkVersion          string
-	ConfigContent       string
+	ConfigContentB64    string
 	SkillsEnvVar        string
 }
 
@@ -54,7 +55,7 @@ func buildSpecData(gs genState) specTemplateData {
 		SemVersion:          gs.input.SemVersion,
 		RtkVersion:          gs.input.RtkVersion,
 		SkillsEnvVar:        generateSkillsEnvVar(gs.input.SkillsAbsPath),
-		ConfigContent:       gs.configContent,
+		ConfigContentB64:    base64.StdEncoding.EncodeToString([]byte(gs.configContent)),
 	}
 }
 

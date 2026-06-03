@@ -1,6 +1,7 @@
 package containersbx
 
 import (
+	"encoding/base64"
 	"testing"
 
 	E "github.com/IBM/fp-go/v2/either"
@@ -52,7 +53,6 @@ func TestGenerateSpec_CustomConfig(t *testing.T) {
 	spec, _ := E.Unwrap(result)
 
 	assert.Contains(t, spec.spec, "custom-sbx")
-	assert.Contains(t, spec.spec, `"model":"custom-model"`)
 	assert.Contains(t, spec.spec, "1.23.0")
 	assert.Contains(t, spec.spec, "v2.0.0")
 }
@@ -157,7 +157,9 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 	require.Equal(t, "v0.4.0", data.MoxideVersion)
 	require.Equal(t, "v3.0.0", data.SemVersion)
 	require.Equal(t, "v1.5.0", data.RtkVersion)
-	require.JSONEq(t, `{"key":"value"}`, data.ConfigContent)
+	decoded, err := base64.StdEncoding.DecodeString(data.ConfigContentB64)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"key":"value"}`, string(decoded))
 	require.Contains(t, data.SkillsEnvVar, "/skills")
 }
 
