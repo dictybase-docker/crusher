@@ -20,15 +20,17 @@ func fakeSbxRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 
 func TestBuildCreateArgs_WithoutSkillsPath(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		Input: Input{
-			SkillsAbsPath: "",
+	ss := stepState{
+		State: execState{
+			Input: Input{
+				SkillsAbsPath: "",
+			},
+			KitName:    "my-kit",
+			OutputPath: "/tmp/out.zip",
 		},
-		KitName:    "my-kit",
-		OutputPath: "/tmp/out.zip",
 	}
 
-	args := buildCreateArgs(state)
+	args := buildCreateArgs(ss)
 
 	require.Len(args, 4)
 	require.Equal("create", args[0])
@@ -39,15 +41,17 @@ func TestBuildCreateArgs_WithoutSkillsPath(t *testing.T) {
 
 func TestBuildCreateArgs_WithSkillsPath(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		Input: Input{
-			SkillsAbsPath: "/abs/skills",
+	ss := stepState{
+		State: execState{
+			Input: Input{
+				SkillsAbsPath: "/abs/skills",
+			},
+			KitName:    "my-kit",
+			OutputPath: "/tmp/out.zip",
 		},
-		KitName:    "my-kit",
-		OutputPath: "/tmp/out.zip",
 	}
 
-	args := buildCreateArgs(state)
+	args := buildCreateArgs(ss)
 
 	require.Len(args, 5)
 	require.Equal("create", args[0])
@@ -104,163 +108,182 @@ func TestExecuteWith_RunnerFails(t *testing.T) {
 	require.True(E.IsLeft(result))
 }
 
-func TestValidateKitWith_Success(t *testing.T) {
+func TestValidateKit_Success(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		TempDir: "/tmp/sbx-test",
+	ss := stepState{
+		State: execState{TempDir: "/tmp/sbx-test"},
+		Run:   fakeSbxRunner,
 	}
 
-	either := validateKitWith(fakeSbxRunner)(state)()
+	either := validateKit(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(_ error) execState { return execState{} },
-		F.Identity[execState],
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
 	)(either)
-	require.Equal("/tmp/sbx-test", result.TempDir)
+	require.Equal("/tmp/sbx-test", result.State.TempDir)
 }
 
-func TestValidateKitWith_Failure(t *testing.T) {
+func TestValidateKit_Failure(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		TempDir: "/tmp/sbx-test",
+	ss := stepState{
+		State: execState{TempDir: "/tmp/sbx-test"},
+		Run:   fakeSbxRunnerFail,
 	}
 
-	either := validateKitWith(fakeSbxRunnerFail)(state)()
+	either := validateKit(ss)()
 	require.True(E.IsLeft(either))
 
 	err := E.Fold(
 		F.Identity[error],
-		func(execState) error { return nil },
+		func(stepState) error { return nil },
 	)(either)
 	require.EqualError(err, "sbx command failed")
 }
 
-func TestStoreSecretWith_Success(t *testing.T) {
+func TestStoreSecret_Success(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		APIKey: "sk-abc123",
+	ss := stepState{
+		State: execState{APIKey: "sk-abc123"},
+		Run:   fakeSbxRunner,
 	}
 
-	either := storeSecretWith(fakeSbxRunner)(state)()
+	either := storeSecret(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(_ error) execState { return execState{} },
-		F.Identity[execState],
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
 	)(either)
-	require.Equal("sk-abc123", result.APIKey)
+	require.Equal("sk-abc123", result.State.APIKey)
 }
 
-func TestStoreSecretWith_Failure(t *testing.T) {
+func TestStoreSecret_Failure(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		APIKey: "sk-abc123",
+	ss := stepState{
+		State: execState{APIKey: "sk-abc123"},
+		Run:   fakeSbxRunnerFail,
 	}
 
-	either := storeSecretWith(fakeSbxRunnerFail)(state)()
+	either := storeSecret(ss)()
 	require.True(E.IsLeft(either))
 
 	err := E.Fold(
 		F.Identity[error],
-		func(execState) error { return nil },
+		func(stepState) error { return nil },
 	)(either)
 	require.EqualError(err, "sbx command failed")
 }
 
-func TestPackKitWith_Success(t *testing.T) {
+func TestPackKit_Success(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		TempDir:    "/tmp/sbx-test",
-		OutputPath: "/tmp/kit.zip",
-		KitName:    "test-kit",
+	ss := stepState{
+		State: execState{
+			TempDir:    "/tmp/sbx-test",
+			OutputPath: "/tmp/kit.zip",
+			KitName:    "test-kit",
+		},
+		Run: fakeSbxRunner,
 	}
 
-	either := packKitWith(fakeSbxRunner)(state)()
+	either := packKit(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(_ error) execState { return execState{} },
-		F.Identity[execState],
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
 	)(either)
-	require.Equal("/tmp/kit.zip", result.Result.OutputPath)
-	require.Equal("test-kit", result.Result.KitName)
+	require.Equal("/tmp/kit.zip", result.State.Result.OutputPath)
+	require.Equal("test-kit", result.State.Result.KitName)
 }
 
-func TestPackKitWith_Failure(t *testing.T) {
+func TestPackKit_Failure(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		TempDir:    "/tmp/sbx-test",
-		OutputPath: "/tmp/kit.zip",
-		KitName:    "test-kit",
+	ss := stepState{
+		State: execState{
+			TempDir:    "/tmp/sbx-test",
+			OutputPath: "/tmp/kit.zip",
+			KitName:    "test-kit",
+		},
+		Run: fakeSbxRunnerFail,
 	}
 
-	either := packKitWith(fakeSbxRunnerFail)(state)()
+	either := packKit(ss)()
 	require.True(E.IsLeft(either))
 
 	err := E.Fold(
 		F.Identity[error],
-		func(execState) error { return nil },
+		func(stepState) error { return nil },
 	)(either)
 	require.EqualError(err, "sbx command failed")
 }
 
-func TestCreateSandboxOrSkipWith_Skip(t *testing.T) {
+func TestCreateSandboxOrSkip_Skip(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		Input: Input{
-			ShouldCreate: false,
+	ss := stepState{
+		State: execState{
+			Input: Input{
+				ShouldCreate: false,
+			},
+			KitName:    "test-kit",
+			OutputPath: "/tmp/kit.zip",
 		},
-		KitName:    "test-kit",
-		OutputPath: "/tmp/kit.zip",
+		Run: fakeSbxRunner,
 	}
 
-	either := createSandboxOrSkipWith(fakeSbxRunner)(state)()
+	either := createSandboxOrSkip(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(_ error) execState { return execState{} },
-		F.Identity[execState],
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
 	)(either)
-	require.False(result.Result.Created)
+	require.False(result.State.Result.Created)
 }
 
-func TestCreateSandboxOrSkipWith_Create(t *testing.T) {
+func TestCreateSandboxOrSkip_Create(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		Input: Input{
-			ShouldCreate: true,
+	ss := stepState{
+		State: execState{
+			Input: Input{
+				ShouldCreate: true,
+			},
+			KitName:    "test-kit",
+			OutputPath: "/tmp/kit.zip",
 		},
-		KitName:    "test-kit",
-		OutputPath: "/tmp/kit.zip",
+		Run: fakeSbxRunner,
 	}
 
-	either := createSandboxOrSkipWith(fakeSbxRunner)(state)()
+	either := createSandboxOrSkip(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
-		func(_ error) execState { return execState{} },
-		F.Identity[execState],
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
 	)(either)
-	require.True(result.Result.Created)
+	require.True(result.State.Result.Created)
 }
 
-func TestCreateSandboxOrSkipWith_CreateFail(t *testing.T) {
+func TestCreateSandboxOrSkip_CreateFail(t *testing.T) {
 	require := require.New(t)
-	state := execState{
-		Input: Input{
-			ShouldCreate: true,
+	ss := stepState{
+		State: execState{
+			Input: Input{
+				ShouldCreate: true,
+			},
+			KitName:    "test-kit",
+			OutputPath: "/tmp/kit.zip",
 		},
-		KitName:    "test-kit",
-		OutputPath: "/tmp/kit.zip",
+		Run: fakeSbxRunnerFail,
 	}
 
-	either := createSandboxOrSkipWith(fakeSbxRunnerFail)(state)()
+	either := createSandboxOrSkip(ss)()
 	require.True(E.IsLeft(either))
 
 	err := E.Fold(
 		F.Identity[error],
-		func(execState) error { return nil },
+		func(stepState) error { return nil },
 	)(either)
 	require.EqualError(err, "sbx command failed")
 }
