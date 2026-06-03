@@ -33,7 +33,8 @@ func TestInputFromCommand_MinimalInput(t *testing.T) {
 			require.Equal("/host/data", input.DataPath)
 			require.Equal("/host/skills", input.SkillsPath)
 			require.Equal("test-api-key", input.APIKey)
-			require.Equal("", input.ContainerName)
+			require.Empty(input.ContainerName)
+
 			return nil
 		},
 	}
@@ -60,6 +61,7 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			require.Equal("test-api-key", input.APIKey)
 			require.Equal("ghp_token", input.GitHubToken)
 			require.Equal("/host/workspace", input.WorkspacePath)
+
 			return nil
 		},
 	}
@@ -83,6 +85,7 @@ func TestInputFromCommand_VolumesFlag(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal([]string{"/host/vol1", "/host/vol2"}, input.Volumes)
+
 			return nil
 		},
 	}
@@ -104,6 +107,7 @@ func TestInputFromCommand_ImageShortFlag(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal("myimage:latest", input.ImageName)
+
 			return nil
 		},
 	}

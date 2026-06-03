@@ -23,7 +23,7 @@ func TestValidateInput_EmptyTagList(t *testing.T) {
 		result,
 		E.Fold(F.Identity[error], func(Input) error { return nil }),
 	)
-	require.NotNil(err)
+	require.Error(err)
 	require.EqualError(err, "tag values must be non-empty")
 }
 
@@ -42,7 +42,7 @@ func TestValidateInput_BlankTagEntry(t *testing.T) {
 		result,
 		E.Fold(F.Identity[error], func(Input) error { return nil }),
 	)
-	require.NotNil(err)
+	require.Error(err)
 	require.EqualError(err, "tag values must be non-empty")
 }
 

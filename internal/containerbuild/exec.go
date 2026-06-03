@@ -55,6 +55,7 @@ func runProcess(spec CommandSpec) IOE.IOEither[error, F.Void] {
 					Stdout: os.Stdout,
 					Stderr: os.Stderr,
 				}
+
 				return F.VOID, cmd.Run()
 			})
 		}),

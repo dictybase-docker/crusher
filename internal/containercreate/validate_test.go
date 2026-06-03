@@ -95,7 +95,7 @@ func TestValidateInput_ReservedVolumeBasename(t *testing.T) {
 		result,
 		E.Fold(F.Identity[error], func(ResolvedInput) error { return nil }),
 	)
-	require.NotNil(err)
+	require.Error(err)
 	require.Contains(err.Error(), "reserved or invalid")
 }
 

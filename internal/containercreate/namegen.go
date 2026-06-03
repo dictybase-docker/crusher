@@ -94,6 +94,7 @@ func randomInt(limit int) int {
 			func() int { return 0 },
 			func(m int) int {
 				n, err := rand.Int(rand.Reader, big.NewInt(int64(m)))
+
 				return F.Pipe1(
 					O.FromPredicate(func(error) bool { return err == nil })(err),
 					O.Fold(

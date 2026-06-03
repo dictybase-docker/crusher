@@ -61,6 +61,7 @@ func TestExecuteWith_FileSource(t *testing.T) {
 	require := require.New(t)
 
 	var captured CommandSpec
+
 	fakeCapture := func(spec CommandSpec) IOE.IOEither[error, F.Void] {
 		captured = spec
 		return IOE.Of[error](F.VOID)

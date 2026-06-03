@@ -126,6 +126,7 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	F.Pipe2(result, P.Tail, printResult)
+
 	return nil
 }
 
@@ -138,5 +139,6 @@ func printResult(r ContainerResult) F.Void {
 	nord8.Print("Attach with: ")
 	nord10.Printf("docker exec -it %s /bin/sh", r.Name)
 	color.Println()
+
 	return F.VOID
 }

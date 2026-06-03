@@ -185,12 +185,14 @@ func TestBuildArgs_ArgsOrder(t *testing.T) {
 	require.Equal("create", spec.Args[0])
 
 	nameIdx := -1
+
 	for i, arg := range spec.Args {
 		if arg == "--name" {
 			nameIdx = i
 			break
 		}
 	}
+
 	require.GreaterOrEqual(nameIdx, 0)
 	require.Equal("test-container", spec.Args[nameIdx+1])
 }

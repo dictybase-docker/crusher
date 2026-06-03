@@ -67,7 +67,9 @@ func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
 		IOE.Chain(func(tmpl *template.Template) IOE.IOEither[error, bytes.Buffer] {
 			return IOE.TryCatchError(func() (bytes.Buffer, error) {
 				var buf bytes.Buffer
+
 				err := tmpl.Execute(&buf, data)
+
 				return buf, err
 			})
 		}),
