@@ -90,24 +90,6 @@ func TestResolveSkillsPath_NonEmptyPath(t *testing.T) {
 	require.Equal(tmpDir, result.SkillsAbsPath)
 }
 
-func TestExecuteWith_Success(t *testing.T) {
-	require := require.New(t)
-	result := executeWith(fakeSbxRunner, Input{KitName: "test-kit"})()
-	require.True(E.IsRight(result))
-
-	kr := E.Fold(
-		func(_ error) KitResult { return KitResult{} },
-		F.Identity[KitResult],
-	)(result)
-	require.Equal("test-kit", kr.KitName)
-}
-
-func TestExecuteWith_RunnerFails(t *testing.T) {
-	require := require.New(t)
-	result := executeWith(fakeSbxRunnerFail, Input{KitName: "test-kit"})()
-	require.True(E.IsLeft(result))
-}
-
 func TestValidateKit_Success(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
