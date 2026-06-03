@@ -25,7 +25,8 @@ func TestGenerateName_Unique(t *testing.T) {
 	require := require.New(t)
 
 	names := make(map[string]bool)
-	for i := 0; i < 100; i++ {
+
+	for range 100 {
 		name := GenerateName()
 		names[name] = true
 	}
@@ -36,7 +37,7 @@ func TestGenerateName_Unique(t *testing.T) {
 func TestGenerateName_MatchesPattern(t *testing.T) {
 	require := require.New(t)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		name := GenerateName()
 		require.Regexp(`^[a-z]+-[a-z]+$`, name, "name should match adjective-noun pattern")
 	}
@@ -46,7 +47,7 @@ func TestPickRandom_ReturnsValueFromSlice(t *testing.T) {
 	require := require.New(t)
 
 	items := []string{"a", "b", "c"}
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		result := pickRandom(items)
 		require.Contains(items, result, "result should be from the slice")
 	}
@@ -56,15 +57,16 @@ func TestPickRandom_EmptySlice(t *testing.T) {
 	require := require.New(t)
 
 	var items []string
+
 	result := pickRandom(items)
-	require.Equal("", result, "empty slice should return zero value")
+	require.Empty(result, "empty slice should return zero value")
 }
 
 func TestPickRandom_SingleElement(t *testing.T) {
 	require := require.New(t)
 
 	items := []string{"only"}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		result := pickRandom(items)
 		require.Equal("only", result, "single element slice should return that element")
 	}

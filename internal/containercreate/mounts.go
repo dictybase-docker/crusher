@@ -16,6 +16,7 @@ func renderMount(mount MountSpec) []string {
 		mount.HostPath,
 		mount.TargetPath,
 	)
+
 	return F.Pipe3(
 		mount.Readonly,
 		O.FromPredicate(func(bool) bool { return mount.Readonly }),

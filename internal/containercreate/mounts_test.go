@@ -103,6 +103,7 @@ func TestRenderEnvVars_WithoutGitHubToken(t *testing.T) {
 	result := renderEnvVars("test-api-key-123", "")
 
 	require.Len(result, 8)
+
 	for _, arg := range result {
 		require.NotContains(arg, "GITHUB_TOKEN")
 	}
@@ -149,6 +150,7 @@ func TestConfigMount_IsReadwrite(t *testing.T) {
 	)
 
 	var configMount *MountSpec
+
 	for i := range resolved.Mounts {
 		if resolved.Mounts[i].TargetPath == ConfigTarget {
 			configMount = &resolved.Mounts[i]
@@ -185,6 +187,7 @@ func TestDataMount_IsReadwrite(t *testing.T) {
 	)
 
 	var dataMount *MountSpec
+
 	for i := range resolved.Mounts {
 		if resolved.Mounts[i].TargetPath == DataTarget {
 			dataMount = &resolved.Mounts[i]
@@ -221,6 +224,7 @@ func TestSkillsMount_IsReadonly(t *testing.T) {
 	)
 
 	var skillsMount *MountSpec
+
 	for i := range resolved.Mounts {
 		if resolved.Mounts[i].TargetPath == SkillsTarget {
 			skillsMount = &resolved.Mounts[i]
@@ -261,7 +265,9 @@ func TestAdditionalVolume_IsReadonly(t *testing.T) {
 	)
 
 	expectedTarget := ContainerHome + "/myproject"
+
 	var volumeMount *MountSpec
+
 	for i := range resolved.Mounts {
 		if resolved.Mounts[i].TargetPath == expectedTarget {
 			volumeMount = &resolved.Mounts[i]

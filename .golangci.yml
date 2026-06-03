@@ -18,27 +18,34 @@ linters:
     - gosec
     - govet
     - gocognit
+    - godoclint
+    - intrange
     - ineffassign
     - importas
     - inamedparam
     - interfacebloat
     - lll
     - loggercheck
+    - maintidx
     - misspell
     - mnd
+    - modernize
     - nakedret
     - nestif
+    - protogetter
     - revive
     - recvcheck
     - staticcheck
+    - testifylint
     - unconvert
     - usestdlibvars
     - unparam
     - unused
     - whitespace
+    - wsl_v5
   settings:
     funlen:
-      lines: 80
+      lines: 120
       statements: 50
   exclusions:
     generated: lax

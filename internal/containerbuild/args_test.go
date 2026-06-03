@@ -133,6 +133,7 @@ func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
 	spec := RenderCommand(req, "Dockerfile")
 
 	var buildArgValues []string
+
 	for i, arg := range spec.Args {
 		if arg == "--build-arg" && i+1 < len(spec.Args) {
 			buildArgValues = append(buildArgValues, spec.Args[i+1])
@@ -163,12 +164,14 @@ func TestRenderCommand_BuildArgs_Position(t *testing.T) {
 	require.Equal(".", spec.Args[len(spec.Args)-1])
 
 	buildArgIdx := -1
+
 	for i, arg := range spec.Args {
 		if arg == "GOLANGCI_LINT_VERSION=2.11.4" {
 			buildArgIdx = i
 			break
 		}
 	}
+
 	require.Less(buildArgIdx, len(spec.Args)-1)
 }
 

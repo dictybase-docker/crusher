@@ -190,6 +190,7 @@ func packKitWith(run processRunner) func(execState) IOE.IOEither[error, execStat
 			IOE.Map[error](func(F.Void) execState {
 				state.Result.OutputPath = state.OutputPath
 				state.Result.KitName = state.KitName
+
 				return state
 			}),
 		)
@@ -253,6 +254,7 @@ func runSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
 					Stdout: os.Stdout,
 					Stderr: os.Stderr,
 				}
+
 				return F.VOID, cmd.Run()
 			})
 		}),

@@ -157,7 +157,7 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 	require.Equal(t, "v0.4.0", data.MoxideVersion)
 	require.Equal(t, "v3.0.0", data.SemVersion)
 	require.Equal(t, "v1.5.0", data.RtkVersion)
-	require.Equal(t, `{"key":"value"}`, data.ConfigContent)
+	require.JSONEq(t, `{"key":"value"}`, data.ConfigContent)
 	require.Contains(t, data.SkillsEnvVar, "/skills")
 }
 

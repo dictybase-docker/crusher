@@ -74,6 +74,7 @@ func TestEmbeddedResolver_WritesEmbeddedContent(t *testing.T) {
 	res := E.GetOrElse(func(error) DockerfileResource {
 		return DockerfileResource{}
 	})(result)
+
 	defer func() { _ = res.Release() }()
 
 	content, err := os.ReadFile(res.Path)

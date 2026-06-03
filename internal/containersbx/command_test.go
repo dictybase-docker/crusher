@@ -30,9 +30,9 @@ func TestInputFromCommand_MinimalInput(t *testing.T) {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal(DefaultOutputPath, input.OutputPath)
 			require.Equal("my-api-key", input.APIKey)
-			require.Equal("", input.ConfigPath)
-			require.Equal("", input.SkillsPath)
-			require.Equal("", input.KitName)
+			require.Empty(input.ConfigPath)
+			require.Empty(input.SkillsPath)
+			require.Empty(input.KitName)
 			require.False(input.ShouldCreate)
 			require.Equal(DefaultCrushVersion, input.CrushVersion)
 			require.Equal(DefaultGolangciLintVersion, input.GolangciLintVersion)
@@ -41,6 +41,7 @@ func TestInputFromCommand_MinimalInput(t *testing.T) {
 			require.Equal(DefaultMoxideVersion, input.MoxideVersion)
 			require.Equal(DefaultSemVersion, input.SemVersion)
 			require.Equal(DefaultRtkVersion, input.RtkVersion)
+
 			return nil
 		},
 	}
@@ -63,6 +64,7 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			require.Equal("1.60.0", input.GolangciLintVersion)
 			require.Equal("1.24.0", input.GoVersion)
 			require.Equal("1.8.0", input.GotestsumVersion)
+
 			return nil
 		},
 	}
@@ -88,6 +90,7 @@ func TestInputFromCommand_ShouldCreateFalse(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.False(input.ShouldCreate)
+
 			return nil
 		},
 	}
@@ -105,6 +108,7 @@ func TestInputFromCommand_ShortFlags(t *testing.T) {
 			require.Equal("/path/skills", input.SkillsPath)
 			require.Equal("test-kit", input.KitName)
 			require.Equal("sk-key", input.APIKey)
+
 			return nil
 		},
 	}

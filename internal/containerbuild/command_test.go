@@ -23,6 +23,7 @@ func TestInputFromCommand_Defaults(t *testing.T) {
 			require.Equal("latest", input.BuildArgs["MOXIDE_VERSION"])
 			require.Equal("latest", input.BuildArgs["SEM_VERSION"])
 			require.Equal("latest", input.BuildArgs["RTK_VERSION"])
+
 			return nil
 		},
 	}
@@ -37,6 +38,7 @@ func TestInputFromCommand_CustomNameAndTags(t *testing.T) {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal("myimage", input.Name)
 			require.Equal([]string{"v1", "v2"}, input.Tags)
+
 			return nil
 		},
 	}
@@ -54,6 +56,7 @@ func TestInputFromCommand_EmbedFlag(t *testing.T) {
 			require.True(cmd.Bool("embed"))
 			input := InputFromCommand(ctx, cmd)
 			require.NotNil(input.DockerfileSource)
+
 			return nil
 		},
 	}
@@ -67,6 +70,7 @@ func TestInputFromCommand_CustomFileFlag(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.NotNil(input.DockerfileSource)
+
 			return nil
 		},
 	}
@@ -82,6 +86,7 @@ func TestInputFromCommand_VersionFlags(t *testing.T) {
 			require.Equal("3.0.0", input.BuildArgs["GOLANGCI_LINT_VERSION"])
 			require.Equal("v2", input.BuildArgs["CRUSH_VERSION"])
 			require.Equal("1.5.0", input.BuildArgs["GOTESTSUM_VERSION"])
+
 			return nil
 		},
 	}

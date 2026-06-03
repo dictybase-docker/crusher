@@ -154,5 +154,6 @@ func printResult(r KitResult) {
 		nord8.Print("To run:         ")
 		nord10.Printf("sbx run --kit %s crush", r.OutputPath)
 	}
+
 	color.Println()
 }

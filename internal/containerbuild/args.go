@@ -1,6 +1,3 @@
-// Package containerbuild provides the implementation of the ContainerBuild
-// command, which builds a container image from a Dockerfile and tags it with
-// the provided name and tags.
 package containerbuild
 
 import (
