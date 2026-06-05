@@ -124,31 +124,86 @@ func TestValidateKit_Failure(t *testing.T) {
 	require.EqualError(err, "sbx command failed")
 }
 
-func TestStoreSecret_Success(t *testing.T) {
+func fakeSbxRunnerFailOnSecond() processRunner {
+	calls := 0
+	return func(_ CommandSpec) IOE.IOEither[error, F.Void] {
+		calls++
+		if calls >= 2 {
+			return IOE.Left[F.Void](errors.New("sbx command failed"))
+		}
+		return IOE.Of[error](F.VOID)
+	}
+}
+
+func TestCreateWithSecret_Skip(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
-		State: execState{APIKey: "sk-abc123"},
-		Run:   fakeSbxRunner,
+		State: execState{Input: Input{ShouldCreate: false}},
+		Run:   fakeSbxRunnerFail,
 	}
 
-	either := storeSecret(ss)()
+	either := createWithSecret(ss)()
 	require.True(E.IsRight(either))
 
 	result := E.Fold(
 		func(_ error) stepState { return stepState{} },
 		F.Identity[stepState],
 	)(either)
-	require.Equal("sk-abc123", result.State.APIKey)
+	require.False(result.State.Result.Created)
 }
 
-func TestStoreSecret_Failure(t *testing.T) {
+func TestCreateWithSecret_Success(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
-		State: execState{APIKey: "sk-abc123"},
+		State: execState{
+			Input:      Input{ShouldCreate: true},
+			APIKey:     "sk-abc123",
+			KitName:    "test-kit",
+			OutputPath: "/tmp/kit.zip",
+		},
+		Run: fakeSbxRunner,
+	}
+
+	either := createWithSecret(ss)()
+	require.True(E.IsRight(either))
+
+	result := E.Fold(
+		func(_ error) stepState { return stepState{} },
+		F.Identity[stepState],
+	)(either)
+	require.True(result.State.Result.Created)
+}
+
+func TestCreateWithSecret_StoreSecretFails(t *testing.T) {
+	require := require.New(t)
+	ss := stepState{
+		State: execState{Input: Input{ShouldCreate: true}, APIKey: "sk-abc123"},
 		Run:   fakeSbxRunnerFail,
 	}
 
-	either := storeSecret(ss)()
+	either := createWithSecret(ss)()
+	require.True(E.IsLeft(either))
+
+	err := E.Fold(
+		F.Identity[error],
+		func(stepState) error { return nil },
+	)(either)
+	require.EqualError(err, "sbx command failed")
+}
+
+func TestCreateWithSecret_CreateFails(t *testing.T) {
+	require := require.New(t)
+	ss := stepState{
+		State: execState{
+			Input:      Input{ShouldCreate: true},
+			APIKey:     "sk-abc123",
+			KitName:    "test-kit",
+			OutputPath: "/tmp/kit.zip",
+		},
+		Run: fakeSbxRunnerFailOnSecond(),
+	}
+
+	either := createWithSecret(ss)()
 	require.True(E.IsLeft(either))
 
 	err := E.Fold(
@@ -201,71 +256,3 @@ func TestPackKit_Failure(t *testing.T) {
 	require.EqualError(err, "sbx command failed")
 }
 
-func TestCreateSandboxOrSkip_Skip(t *testing.T) {
-	require := require.New(t)
-	ss := stepState{
-		State: execState{
-			Input: Input{
-				ShouldCreate: false,
-			},
-			KitName:    "test-kit",
-			OutputPath: "/tmp/kit.zip",
-		},
-		Run: fakeSbxRunner,
-	}
-
-	either := createSandboxOrSkip(ss)()
-	require.True(E.IsRight(either))
-
-	result := E.Fold(
-		func(_ error) stepState { return stepState{} },
-		F.Identity[stepState],
-	)(either)
-	require.False(result.State.Result.Created)
-}
-
-func TestCreateSandboxOrSkip_Create(t *testing.T) {
-	require := require.New(t)
-	ss := stepState{
-		State: execState{
-			Input: Input{
-				ShouldCreate: true,
-			},
-			KitName:    "test-kit",
-			OutputPath: "/tmp/kit.zip",
-		},
-		Run: fakeSbxRunner,
-	}
-
-	either := createSandboxOrSkip(ss)()
-	require.True(E.IsRight(either))
-
-	result := E.Fold(
-		func(_ error) stepState { return stepState{} },
-		F.Identity[stepState],
-	)(either)
-	require.True(result.State.Result.Created)
-}
-
-func TestCreateSandboxOrSkip_CreateFail(t *testing.T) {
-	require := require.New(t)
-	ss := stepState{
-		State: execState{
-			Input: Input{
-				ShouldCreate: true,
-			},
-			KitName:    "test-kit",
-			OutputPath: "/tmp/kit.zip",
-		},
-		Run: fakeSbxRunnerFail,
-	}
-
-	either := createSandboxOrSkip(ss)()
-	require.True(E.IsLeft(either))
-
-	err := E.Fold(
-		F.Identity[error],
-		func(stepState) error { return nil },
-	)(either)
-	require.EqualError(err, "sbx command failed")
-}
