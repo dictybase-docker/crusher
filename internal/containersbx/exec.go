@@ -27,18 +27,17 @@ type stepState struct {
 	Run   processRunner
 }
 
-// Execute runs the full pipeline: generate → validate → store secret → pack → optionally create.
+// Execute runs the full pipeline: generate → validate → pack → optionally store secret + create.
 func Execute(input Input) IOE.IOEither[error, KitResult] {
-	return F.Pipe7(
+	return F.Pipe6(
 		input,
 		generateToTempDir,
 		IOE.Map[error](func(es execState) stepState {
 			return stepState{State: es, Run: runSbxCommand}
 		}),
 		IOE.Chain(validateKit),
-		IOE.Chain(storeSecret),
 		IOE.Chain(packKit),
-		IOE.Chain(createSandboxOrSkip),
+		IOE.Chain(createWithSecret),
 		IOE.Map[error](func(ss stepState) KitResult {
 			return ss.State.Result
 		}),
@@ -188,18 +187,6 @@ func validateKit(ss stepState) IOE.IOEither[error, stepState] {
 	)
 }
 
-// storeSecret pipes the API key via stdin to "sbx secret set openrouter".
-func storeSecret(ss stepState) IOE.IOEither[error, stepState] {
-	return F.Pipe1(
-		ss.Run(CommandSpec{
-			Bin:   sbxBinary,
-			Args:  []string{"secret", "set", "openrouter"},
-			Stdin: ss.State.APIKey + "\n",
-		}),
-		IOE.Map[error](func(F.Void) stepState { return ss }),
-	)
-}
-
 // packKit runs "sbx kit pack" to produce the output zip.
 func packKit(ss stepState) IOE.IOEither[error, stepState] {
 	return F.Pipe1(
@@ -223,17 +210,30 @@ func buildCreateArgs(ss stepState) []string {
 		O.FromPredicate(Str.IsNonEmpty),
 		O.Fold(
 			func() []string {
-				return []string{"create", ss.State.KitName, "--kit", ss.State.OutputPath}
+				return []string{
+					"create",
+					ss.State.KitName,
+					"--kit",
+					ss.State.OutputPath,
+				}
 			},
 			func(p string) []string {
-				return []string{"create", ss.State.KitName, "--kit", ss.State.OutputPath, p + ":ro"}
+				return []string{
+					"create",
+					ss.State.KitName,
+					"--kit",
+					ss.State.OutputPath,
+					p + ":ro",
+				}
 			},
 		),
 	)
 }
 
-// createSandboxOrSkip runs "sbx create" when ShouldCreate is true, otherwise a nop.
-func createSandboxOrSkip(ss stepState) IOE.IOEither[error, stepState] {
+// createWithSecret conditionally stores the API-key secret then creates the
+// sandbox. Both actions share the same ShouldCreate gate — storing a global
+// secret only makes sense when a sandbox is about to consume it.
+func createWithSecret(ss stepState) IOE.IOEither[error, stepState] {
 	return F.Pipe2(
 		ss.State.ShouldCreate,
 		O.FromPredicate(F.Identity[bool]),
@@ -242,10 +242,17 @@ func createSandboxOrSkip(ss stepState) IOE.IOEither[error, stepState] {
 				return IOE.Of[error](ss)
 			},
 			func(_ bool) IOE.IOEither[error, stepState] {
-				return F.Pipe1(
+				return F.Pipe2(
 					ss.Run(CommandSpec{
-						Bin:  sbxBinary,
-						Args: buildCreateArgs(ss),
+						Bin:   sbxBinary,
+						Args:  []string{"secret", "set", "-g", "openrouter"},
+						Stdin: ss.State.APIKey + "\n",
+					}),
+					IOE.Chain(func(F.Void) IOE.IOEither[error, F.Void] {
+						return ss.Run(CommandSpec{
+							Bin:  sbxBinary,
+							Args: buildCreateArgs(ss),
+						})
 					}),
 					IOE.Map[error](func(F.Void) stepState {
 						ss.State.Result.Created = true
