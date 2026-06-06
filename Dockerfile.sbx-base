@@ -1,0 +1,4 @@
+FROM docker/sandbox-templates:shell-docker
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tini \
+    && rm -rf /var/lib/apt/lists/*

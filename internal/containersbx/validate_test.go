@@ -18,6 +18,7 @@ func TestNormalizeInput_AllDefaults(t *testing.T) {
 	assert.NotEmpty(t, result.GoVersion)
 	assert.NotEmpty(t, result.CrushVersion)
 	assert.NotEmpty(t, result.GolangciLintVersion)
+	assert.NotEmpty(t, result.AgentImage)
 }
 
 func TestNormalizeInput_BlankOutputPath(t *testing.T) {
@@ -30,6 +31,18 @@ func TestNormalizeInput_BlankKitName(t *testing.T) {
 	input := Input{APIKey: "test-key", KitName: ""}
 	result := NormalizeInput(input)
 	assert.Regexp(t, `^crush-sbx[a-zA-Z0-9]{6}$`, result.KitName)
+}
+
+func TestNormalizeInput_AgentImageDefault(t *testing.T) {
+	input := Input{APIKey: "test-key", AgentImage: ""}
+	result := NormalizeInput(input)
+	assert.Equal(t, DefaultAgentImage, result.AgentImage)
+}
+
+func TestNormalizeInput_AgentImageCustom(t *testing.T) {
+	input := Input{APIKey: "test-key", AgentImage: "custom/image:v1"}
+	result := NormalizeInput(input)
+	assert.Equal(t, "custom/image:v1", result.AgentImage)
 }
 
 func TestValidateInput_MissingAPIKey(t *testing.T) {

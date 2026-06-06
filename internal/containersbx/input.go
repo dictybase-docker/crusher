@@ -11,6 +11,9 @@ const (
 	// DefaultOutputPath is the default path for the packed kit zip file.
 	DefaultOutputPath = "crush-sbx-kit.zip"
 
+	// DefaultAgentImage is the default base image for the sbx sandbox agent.
+	DefaultAgentImage = "ghcr.io/dictybase/crusher:sbx-base"
+
 	// DefaultGoVersion is the default Go toolchain version.
 	DefaultGoVersion = "1.26.3"
 
@@ -49,6 +52,7 @@ type Input struct {
 	KitName             string // Sandbox display name
 	APIKey              string // OpenRouter API key (required)
 	ShouldCreate        bool   // Whether to also create the sandbox instance
+	AgentImage          string // Base Docker image for the sandbox agent
 	CrushVersion        string // Crush version
 	GolangciLintVersion string // golangci-lint version
 	GoVersion           string // Go toolchain version

@@ -31,6 +31,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		KitName:             cmd.String("name"),
 		APIKey:              cmd.String("api-key"),
 		ShouldCreate:        cmd.Bool("create"),
+		AgentImage:          cmd.String("image"),
 		CrushVersion:        cmd.String("crush-version"),
 		GolangciLintVersion: cmd.String("golangci-lint-version"),
 		GoVersion:           cmd.String("go-version"),
@@ -77,6 +78,10 @@ func Command() *cli.Command {
 			&cli.BoolFlag{
 				Name:  "create",
 				Usage: "Create the sandbox instance after packing",
+			},
+			&cli.StringFlag{
+				Name:  "image",
+				Usage: "Base Docker image for the sandbox agent",
 			},
 			&cli.StringFlag{
 				Name:  "crush-version",

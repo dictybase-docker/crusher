@@ -34,3 +34,12 @@ push-ghcr-multi tag="latest":
 # List images
 list:
     docker images | grep {{image}}
+
+# Build the sbx base image with tini
+build-sbx-base:
+    docker build -f Dockerfile.sbx-base -t {{ghcr_image}}:sbx-base .
+
+# Push sbx base image to GitHub Container Registry
+push-sbx-base-ghcr: build-sbx-base
+    echo $GITHUB_REGISTRY_TOKEN | docker login ghcr.io -u {{github_user}} --password-stdin
+    docker push {{ghcr_image}}:sbx-base

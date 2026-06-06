@@ -71,6 +71,11 @@ func NormalizeInput(input Input) Input {
 		APIKey:       input.APIKey,
 		ShouldCreate: input.ShouldCreate,
 		Ctx:          input.Ctx,
+		AgentImage: F.Pipe2(
+			input.AgentImage,
+			O.FromPredicate(isNonBlank),
+			O.GetOrElse(func() string { return DefaultAgentImage }),
+		),
 		OutputPath: F.Pipe2(
 			input.OutputPath,
 			O.FromPredicate(isNonBlank),

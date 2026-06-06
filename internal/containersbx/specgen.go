@@ -15,6 +15,7 @@ import (
 // specTemplateData holds the data used to render spec.yaml.tmpl.
 type specTemplateData struct {
 	KitName             string
+	AgentImage          string
 	GoVersion           string
 	CrushVersion        string
 	GolangciLintVersion string
@@ -47,6 +48,7 @@ func GenerateSpec(gs genState) IOE.IOEither[error, genState] {
 func buildSpecData(gs genState) specTemplateData {
 	return specTemplateData{
 		KitName:             gs.input.KitName,
+		AgentImage:          gs.input.AgentImage,
 		GoVersion:           gs.input.GoVersion,
 		CrushVersion:        gs.input.CrushVersion,
 		GolangciLintVersion: gs.input.GolangciLintVersion,

@@ -5,7 +5,7 @@ displayName: {{.KitName}}
 description: Charmbracelet Crush — agentic coding with OpenRouter
 
 agent:
-  image: "docker/sandbox-templates:shell-docker"
+  image: "{{.AgentImage}}"
   aiFilename: AGENTS.md
   entrypoint:
     run: [crush]

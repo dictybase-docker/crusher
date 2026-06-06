@@ -126,11 +126,13 @@ func TestValidateKit_Failure(t *testing.T) {
 
 func fakeSbxRunnerFailOnSecond() processRunner {
 	calls := 0
+
 	return func(_ CommandSpec) IOE.IOEither[error, F.Void] {
 		calls++
 		if calls >= 2 {
 			return IOE.Left[F.Void](errors.New("sbx command failed"))
 		}
+
 		return IOE.Of[error](F.VOID)
 	}
 }
@@ -255,4 +257,3 @@ func TestPackKit_Failure(t *testing.T) {
 	)(either)
 	require.EqualError(err, "sbx command failed")
 }
-
