@@ -61,6 +61,7 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			require.Equal("sk-abc123", input.APIKey)
 			require.True(input.ShouldCreate)
 			require.Equal("v3.0.0", input.CrushVersion)
+			require.Equal("custom/image:v3", input.AgentImage)
 			require.Equal("1.60.0", input.GolangciLintVersion)
 			require.Equal("1.24.0", input.GoVersion)
 			require.Equal("1.8.0", input.GotestsumVersion)
@@ -76,6 +77,7 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 		"--name", "my-kit",
 		"--api-key", "sk-abc123",
 		"--create",
+		"--image", "custom/image:v3",
 		"--crush-version", "v3.0.0",
 		"--golangci-lint-version", "1.60.0",
 		"--go-version", "1.24.0",

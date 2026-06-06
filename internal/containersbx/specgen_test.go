@@ -12,6 +12,7 @@ import (
 func TestGenerateSpec_MinimalInput(t *testing.T) {
 	input := Input{
 		KitName:             "test-sandbox",
+		AgentImage:          DefaultAgentImage,
 		GoVersion:           DefaultGoVersion,
 		CrushVersion:        DefaultCrushVersion,
 		GolangciLintVersion: DefaultGolangciLintVersion,
@@ -31,6 +32,7 @@ func TestGenerateSpec_MinimalInput(t *testing.T) {
 	assert.Contains(t, spec.spec, DefaultGoVersion)
 	assert.Contains(t, spec.spec, DefaultCrushVersion)
 	assert.Contains(t, spec.spec, DefaultGolangciLintVersion)
+	assert.Contains(t, spec.spec, DefaultAgentImage)
 	assert.Contains(t, spec.spec, "openrouter")
 	assert.NotContains(t, spec.spec, "{{.")
 }
@@ -38,6 +40,7 @@ func TestGenerateSpec_MinimalInput(t *testing.T) {
 func TestGenerateSpec_CustomConfig(t *testing.T) {
 	input := Input{
 		KitName:             "custom-sbx",
+		AgentImage:          DefaultAgentImage,
 		GoVersion:           "1.23.0",
 		CrushVersion:        "v2.0.0",
 		GolangciLintVersion: "2.0.0",
@@ -60,6 +63,7 @@ func TestGenerateSpec_CustomConfig(t *testing.T) {
 func TestGenerateSpec_WithSkills(t *testing.T) {
 	input := Input{
 		KitName:             "skills-sbx",
+		AgentImage:          DefaultAgentImage,
 		GoVersion:           DefaultGoVersion,
 		CrushVersion:        DefaultCrushVersion,
 		GolangciLintVersion: DefaultGolangciLintVersion,
@@ -80,6 +84,7 @@ func TestGenerateSpec_WithSkills(t *testing.T) {
 func TestGenerateSpec_EmptySkills(t *testing.T) {
 	input := Input{
 		KitName:             "no-skills",
+		AgentImage:          DefaultAgentImage,
 		GoVersion:           DefaultGoVersion,
 		CrushVersion:        DefaultCrushVersion,
 		GolangciLintVersion: DefaultGolangciLintVersion,
@@ -101,6 +106,7 @@ func TestGenerateSpec_EmptySkills(t *testing.T) {
 func TestGenerateSpec_AllVersions(t *testing.T) {
 	input := Input{
 		KitName:             "versions-sbx",
+		AgentImage:          DefaultAgentImage,
 		GoVersion:           "1.22.0",
 		CrushVersion:        "v3.0.0",
 		GolangciLintVersion: "2.5.0",
@@ -137,6 +143,7 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 	gs := genState{
 		input: Input{
 			KitName:             "my-kit",
+			AgentImage:          DefaultAgentImage,
 			GoVersion:           "1.23.0",
 			CrushVersion:        "v2.0.0",
 			GolangciLintVersion: "2.0.0",
@@ -150,6 +157,7 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 	}
 	data := buildSpecData(gs)
 	require.Equal(t, "my-kit", data.KitName)
+	require.Equal(t, DefaultAgentImage, data.AgentImage)
 	require.Equal(t, "1.23.0", data.GoVersion)
 	require.Equal(t, "v2.0.0", data.CrushVersion)
 	require.Equal(t, "2.0.0", data.GolangciLintVersion)
@@ -167,6 +175,7 @@ func TestParseAndRenderTemplate_Success(t *testing.T) {
 	gs := genState{
 		input: Input{
 			KitName:             "tmpl-test",
+			AgentImage:          DefaultAgentImage,
 			GoVersion:           DefaultGoVersion,
 			CrushVersion:        DefaultCrushVersion,
 			GolangciLintVersion: DefaultGolangciLintVersion,
