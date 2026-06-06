@@ -35,7 +35,7 @@ RUN set -eux; \
     cargo build --release --manifest-path /rtk-build/Cargo.toml
 
 # --- Stage 2: Runtime image ---
-FROM golang:1.25-alpine3.21
+FROM golang:1.26-alpine3.21
 
 USER root
 
