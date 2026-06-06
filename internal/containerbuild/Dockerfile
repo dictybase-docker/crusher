@@ -1,5 +1,5 @@
 # --- Stage 1: Build sem, sem-mcp, and rtk from source ---
-FROM rust:1-alpine3.21 AS sem-builder
+FROM rust:1-alpine3.23 AS sem-builder
 
 ARG SEM_VERSION=latest
 ARG RTK_VERSION=latest
@@ -35,7 +35,7 @@ RUN set -eux; \
     cargo build --release --manifest-path /rtk-build/Cargo.toml
 
 # --- Stage 2: Runtime image ---
-FROM golang:1.26-alpine3.21
+FROM golang:1.26-alpine3.23
 
 USER root
 
