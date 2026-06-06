@@ -12,7 +12,11 @@ const (
 	DefaultOutputPath = "crush-sbx-kit.zip"
 
 	// DefaultGoVersion is the default Go toolchain version.
-	DefaultGoVersion = "1.25.4"
+	DefaultGoVersion = "1.26.3"
+
+	// agentKitName is the kit schema name declared in spec.yaml (name: crush).
+	// sbx create requires this exact value as its positional argument.
+	agentKitName = "crush"
 
 	// DefaultCrushVersion is the default Crush version.
 	DefaultCrushVersion = "latest"
