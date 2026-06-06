@@ -1,6 +1,6 @@
 module github.com/dictybase-docker/crusher
 
-go 1.25
+go 1.26
 
 require (
 	github.com/IBM/fp-go/v2 v2.2.6
