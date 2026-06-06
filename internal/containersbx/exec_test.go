@@ -34,7 +34,7 @@ func TestBuildCreateArgs_WithoutSkillsPath(t *testing.T) {
 
 	require.Len(args, 4)
 	require.Equal("create", args[0])
-	require.Equal("my-kit", args[1])
+	require.Equal(agentKitName, args[1])
 	require.Equal("--kit", args[2])
 	require.Equal("/tmp/out.zip", args[3])
 }
@@ -55,7 +55,7 @@ func TestBuildCreateArgs_WithSkillsPath(t *testing.T) {
 
 	require.Len(args, 5)
 	require.Equal("create", args[0])
-	require.Equal("my-kit", args[1])
+	require.Equal(agentKitName, args[1])
 	require.Equal("--kit", args[2])
 	require.Equal("/tmp/out.zip", args[3])
 	require.Equal("/abs/skills:ro", args[4])
@@ -232,7 +232,7 @@ func TestPackKit_Success(t *testing.T) {
 		F.Identity[stepState],
 	)(either)
 	require.Equal("/tmp/kit.zip", result.State.Result.OutputPath)
-	require.Equal("test-kit", result.State.Result.KitName)
+	require.Equal(agentKitName, result.State.Result.KitName)
 }
 
 func TestPackKit_Failure(t *testing.T) {

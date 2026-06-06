@@ -138,11 +138,11 @@ func Action(ctx context.Context, cmd *cli.Command) error {
 
 func printResult(r KitResult) {
 	nord8bold.Println("✓ Kit validated")
-	nord8bold.Println("✓ Secret stored for openrouter")
 	nord4.Print("✓ Kit packed: ")
 	nord8bold.Println(r.OutputPath)
 
 	if r.Created {
+		nord8bold.Println("✓ Secret stored for openrouter")
 		color.Println()
 		nord4.Print("✓ Sandbox created: ")
 		nord8bold.Println(r.KitName)

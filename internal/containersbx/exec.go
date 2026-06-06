@@ -196,7 +196,7 @@ func packKit(ss stepState) IOE.IOEither[error, stepState] {
 		}),
 		IOE.Map[error](func(F.Void) stepState {
 			ss.State.Result.OutputPath = ss.State.OutputPath
-			ss.State.Result.KitName = ss.State.KitName
+			ss.State.Result.KitName = agentKitName
 
 			return ss
 		}),
@@ -212,7 +212,7 @@ func buildCreateArgs(ss stepState) []string {
 			func() []string {
 				return []string{
 					"create",
-					ss.State.KitName,
+					agentKitName,
 					"--kit",
 					ss.State.OutputPath,
 				}
@@ -220,7 +220,7 @@ func buildCreateArgs(ss stepState) []string {
 			func(p string) []string {
 				return []string{
 					"create",
-					ss.State.KitName,
+					agentKitName,
 					"--kit",
 					ss.State.OutputPath,
 					p + ":ro",
