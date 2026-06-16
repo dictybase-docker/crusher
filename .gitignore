@@ -21,3 +21,4 @@ docs/
 .crush
 tea_debug.log
 .claude
+.grepai/
