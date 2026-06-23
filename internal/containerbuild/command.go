@@ -69,7 +69,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 
 func Command() *cli.Command {
 	return &cli.Command{
-		Name:  "build",
+		Name:  buildCmd,
 		Usage: "Build an OCI image via the docker CLI",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -82,7 +82,7 @@ func Command() *cli.Command {
 				Name:    "tag",
 				Aliases: []string{"t"},
 				Usage:   "Image tag, repeatable",
-				Value:   []string{"latest"},
+				Value:   []string{latestTag},
 			},
 			&cli.StringFlag{
 				Name:    "name",
@@ -97,32 +97,32 @@ func Command() *cli.Command {
 			&cli.StringFlag{
 				Name:  "golangci-lint-version",
 				Usage: "golangci-lint version",
-				Value: "2.11.4",
+				Value: defaultGolangciLintVersion,
 			},
 			&cli.StringFlag{
 				Name:  "crush-version",
 				Usage: "crush version",
-				Value: "latest",
+				Value: latestTag,
 			},
 			&cli.StringFlag{
 				Name:  "gotestsum-version",
 				Usage: "gotestsum version",
-				Value: "latest",
+				Value: latestTag,
 			},
 			&cli.StringFlag{
 				Name:  "moxide-version",
 				Usage: "markdown-oxide version",
-				Value: "latest",
+				Value: latestTag,
 			},
 			&cli.StringFlag{
 				Name:  "sem-version",
 				Usage: "sem version",
-				Value: "latest",
+				Value: latestTag,
 			},
 			&cli.StringFlag{
 				Name:  "rtk-version",
 				Usage: "rtk version",
-				Value: "latest",
+				Value: latestTag,
 			},
 		},
 		Action: Action,

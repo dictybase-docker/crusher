@@ -42,8 +42,8 @@ func TestGenerateSpec_CustomConfig(t *testing.T) {
 		KitName:             "custom-sbx",
 		AgentImage:          DefaultAgentImage,
 		GoVersion:           "1.23.0",
-		CrushVersion:        "v2.0.0",
-		GolangciLintVersion: "2.0.0",
+		CrushVersion:        testCrushVersion2,
+		GolangciLintVersion: testGLVersion,
 		GotestsumVersion:    DefaultGotestsumVersion,
 		MoxideVersion:       DefaultMoxideVersion,
 		SemVersion:          DefaultSemVersion,
@@ -108,7 +108,7 @@ func TestGenerateSpec_AllVersions(t *testing.T) {
 		KitName:             "versions-sbx",
 		AgentImage:          DefaultAgentImage,
 		GoVersion:           "1.22.0",
-		CrushVersion:        "v3.0.0",
+		CrushVersion:        testCrushVersion3,
 		GolangciLintVersion: "2.5.0",
 		GotestsumVersion:    "v1.0.0",
 		MoxideVersion:       "v0.5.0",
@@ -142,28 +142,28 @@ func TestGenerateSkillsEnvVar_EmptyPath(t *testing.T) {
 func TestBuildSpecData_FieldMapping(t *testing.T) {
 	gs := genState{
 		input: Input{
-			KitName:             "my-kit",
+			KitName:             testKitName,
 			AgentImage:          DefaultAgentImage,
 			GoVersion:           "1.23.0",
 			CrushVersion:        "v2.0.0",
-			GolangciLintVersion: "2.0.0",
+			GolangciLintVersion: testGLVersion,
 			GotestsumVersion:    "v0.6.0",
 			MoxideVersion:       "v0.4.0",
-			SemVersion:          "v3.0.0",
+			SemVersion:          testCrushVersion3,
 			RtkVersion:          "v1.5.0",
 			SkillsAbsPath:       "/skills",
 		},
 		configContent: `{"key":"value"}`,
 	}
 	data := buildSpecData(gs)
-	require.Equal(t, "my-kit", data.KitName)
+	require.Equal(t, testKitName, data.KitName)
 	require.Equal(t, DefaultAgentImage, data.AgentImage)
 	require.Equal(t, "1.23.0", data.GoVersion)
 	require.Equal(t, "v2.0.0", data.CrushVersion)
-	require.Equal(t, "2.0.0", data.GolangciLintVersion)
+	require.Equal(t, testGLVersion, data.GolangciLintVersion)
 	require.Equal(t, "v0.6.0", data.GotestsumVersion)
 	require.Equal(t, "v0.4.0", data.MoxideVersion)
-	require.Equal(t, "v3.0.0", data.SemVersion)
+	require.Equal(t, testCrushVersion3, data.SemVersion)
 	require.Equal(t, "v1.5.0", data.RtkVersion)
 	decoded, err := base64.StdEncoding.DecodeString(data.ConfigContentB64)
 	require.NoError(t, err)

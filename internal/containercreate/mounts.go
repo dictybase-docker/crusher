@@ -8,6 +8,8 @@ import (
 	O "github.com/IBM/fp-go/v2/option"
 )
 
+const envFlag = "--env"
+
 // renderMount converts a MountSpec to a container --mount argument.
 // Format: type=bind,source=<host>,target=<container>[,readonly]
 func renderMount(mount MountSpec) []string {
@@ -35,10 +37,10 @@ func renderMount(mount MountSpec) []string {
 // renderEnvVars returns the environment variable arguments for Crush.
 func renderEnvVars(apiKey string, githubToken string) []string {
 	base := []string{
-		"--env", fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
-		"--env", fmt.Sprintf("CRUSH_GLOBAL_DATA=%s", DataTarget),
-		"--env", fmt.Sprintf("CRUSH_SKILLS_DIR=%s", SkillsTarget),
-		"--env", fmt.Sprintf("OPENROUTER_API_KEY=%s", apiKey),
+		envFlag, fmt.Sprintf("CRUSH_GLOBAL_CONFIG=%s", ConfigTarget),
+		envFlag, fmt.Sprintf("CRUSH_GLOBAL_DATA=%s", DataTarget),
+		envFlag, fmt.Sprintf("CRUSH_SKILLS_DIR=%s", SkillsTarget),
+		envFlag, fmt.Sprintf("OPENROUTER_API_KEY=%s", apiKey),
 	}
 
 	return F.Pipe2(
@@ -47,7 +49,7 @@ func renderEnvVars(apiKey string, githubToken string) []string {
 		O.Fold(
 			func() []string { return base },
 			func(token string) []string {
-				return append(base, "--env", fmt.Sprintf("GITHUB_TOKEN=%s", token))
+				return append(base, envFlag, fmt.Sprintf("GITHUB_TOKEN=%s", token))
 			},
 		),
 	)

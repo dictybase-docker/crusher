@@ -30,7 +30,7 @@ func TestValidateInput_EmptyTagList(t *testing.T) {
 func TestValidateInput_BlankTagEntry(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Tags:      []string{"latest", ""},
+		Tags:      []string{defaultTag, ""},
 		BuildArgs: map[string]string{},
 	}
 
@@ -49,8 +49,8 @@ func TestValidateInput_BlankTagEntry(t *testing.T) {
 func TestValidateInput_DefaultInput(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -62,15 +62,15 @@ func TestValidateInput_DefaultInput(t *testing.T) {
 		result,
 		E.Fold(func(error) Input { return Input{} }, F.Identity[Input]),
 	)
-	require.Equal("myapp", validated.Name)
-	require.Equal([]string{"latest"}, validated.Tags)
+	require.Equal(testName, validated.Name)
+	require.Equal([]string{defaultTag}, validated.Tags)
 }
 
 func TestValidateInput_MultipleTags(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest", "stable", "v1.0.0"},
+		Name:      testName,
+		Tags:      []string{defaultTag, stableTag, v100Tag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -82,16 +82,16 @@ func TestValidateInput_MultipleTags(t *testing.T) {
 		result,
 		E.Fold(func(error) Input { return Input{} }, F.Identity[Input]),
 	)
-	require.Equal("myapp", validated.Name)
-	require.Equal([]string{"latest", "stable", "v1.0.0"}, validated.Tags)
+	require.Equal(testName, validated.Name)
+	require.Equal([]string{defaultTag, stableTag, v100Tag}, validated.Tags)
 }
 
 func TestValidateInput_BuildArgsNotValidated(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
-		BuildArgs: map[string]string{"GOLANGCI_LINT_VERSION": "invalid-version"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
+		BuildArgs: map[string]string{glvKey: "invalid-version"},
 	}
 
 	result := ValidateInput(req)
@@ -101,8 +101,8 @@ func TestValidateInput_BuildArgsNotValidated(t *testing.T) {
 func TestValidateInput_NilBuildArgs(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: nil,
 	}
 

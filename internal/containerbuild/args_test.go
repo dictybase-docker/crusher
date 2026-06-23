@@ -7,11 +7,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testName      = "myapp"
+	defaultTag    = "latest"
+	stableTag     = "stable"
+	glvKey        = "GOLANGCI_LINT_VERSION"
+	glvDefVal     = "2.11.4"
+	testImageName = "testimage"
+	v100Tag       = "v1.0.0"
+)
+
 func TestRenderCommand_DefaultInput(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -27,8 +37,8 @@ func TestRenderCommand_DefaultInput(t *testing.T) {
 func TestRenderCommand_RepeatedTags(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest", "stable", "v1.0.0"},
+		Name:      testName,
+		Tags:      []string{defaultTag, stableTag, v100Tag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -44,8 +54,8 @@ func TestRenderCommand_RepeatedTags(t *testing.T) {
 func TestRenderCommand_DockerfileOverride(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -61,8 +71,8 @@ func TestRenderCommand_DockerfileOverride(t *testing.T) {
 func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -77,8 +87,8 @@ func TestRenderCommand_FinalArgIsBuildContext(t *testing.T) {
 func TestRenderCommand_ArgsOrder(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest", "stable"},
+		Name:      testName,
+		Tags:      []string{defaultTag, stableTag},
 		BuildArgs: map[string]string{},
 	}
 
@@ -98,12 +108,12 @@ func TestRenderCommand_ArgsOrder(t *testing.T) {
 func TestRenderCommand_BuildArgs(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name: testName,
+		Tags: []string{defaultTag},
 		BuildArgs: map[string]string{
-			"GOLANGCI_LINT_VERSION": "2.12.0",
-			"CRUSH_VERSION":         "v1.0.0",
-			"MOXIDE_VERSION":        "v0.25.10",
+			glvKey:           "2.12.0",
+			"CRUSH_VERSION":  v100Tag,
+			"MOXIDE_VERSION": "v0.25.10",
 		},
 	}
 
@@ -118,15 +128,15 @@ func TestRenderCommand_BuildArgs(t *testing.T) {
 func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name: testName,
+		Tags: []string{defaultTag},
 		BuildArgs: map[string]string{
-			"GOLANGCI_LINT_VERSION": "2.11.4",
-			"CRUSH_VERSION":         "latest",
-			"GOTESTSUM_VERSION":     "latest",
-			"MOXIDE_VERSION":        "latest",
-			"RTK_VERSION":           "latest",
-			"SEM_VERSION":           "latest",
+			glvKey:              glvDefVal,
+			"CRUSH_VERSION":     defaultTag,
+			"GOTESTSUM_VERSION": defaultTag,
+			"MOXIDE_VERSION":    defaultTag,
+			"RTK_VERSION":       defaultTag,
+			"SEM_VERSION":       defaultTag,
 		},
 	}
 
@@ -152,10 +162,10 @@ func TestRenderCommand_BuildArgs_SortedOrder(t *testing.T) {
 func TestRenderCommand_BuildArgs_Position(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name: "myapp",
-		Tags: []string{"latest"},
+		Name: testName,
+		Tags: []string{defaultTag},
 		BuildArgs: map[string]string{
-			"GOLANGCI_LINT_VERSION": "2.11.4",
+			glvKey: glvDefVal,
 		},
 	}
 
@@ -178,8 +188,8 @@ func TestRenderCommand_BuildArgs_Position(t *testing.T) {
 func TestRenderCommand_EmptyBuildArgs(t *testing.T) {
 	require := require.New(t)
 	req := Input{
-		Name:      "myapp",
-		Tags:      []string{"latest"},
+		Name:      testName,
+		Tags:      []string{defaultTag},
 		BuildArgs: map[string]string{},
 	}
 

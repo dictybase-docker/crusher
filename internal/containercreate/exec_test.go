@@ -21,14 +21,14 @@ func fakeRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 func TestExecuteWith_HappyPath(t *testing.T) {
 	require := require.New(t)
 	rinput := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "my-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName2,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	either := executeWith(fakeRunner, rinput)()
@@ -38,20 +38,20 @@ func TestExecuteWith_HappyPath(t *testing.T) {
 		func(_ error) ContainerResult { return ContainerResult{} },
 		F.Identity[ContainerResult],
 	)(either)
-	require.Equal("my-container", result.Name)
+	require.Equal(testContainerName2, result.Name)
 }
 
 func TestExecuteWith_RunnerError(t *testing.T) {
 	require := require.New(t)
 	rinput := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "my-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName2,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	either := executeWith(fakeRunnerFail, rinput)()
@@ -66,7 +66,7 @@ func TestExecuteWith_RunnerError(t *testing.T) {
 
 func TestStartContainerWith_HappyPath(t *testing.T) {
 	require := require.New(t)
-	result := ContainerResult{Name: "my-container"}
+	result := ContainerResult{Name: testContainerName2}
 
 	either := startContainerWith(fakeRunner, result)()
 	require.True(E.IsRight(either))
@@ -75,12 +75,12 @@ func TestStartContainerWith_HappyPath(t *testing.T) {
 		func(_ error) ContainerResult { return ContainerResult{} },
 		F.Identity[ContainerResult],
 	)(either)
-	require.Equal("my-container", out.Name)
+	require.Equal(testContainerName2, out.Name)
 }
 
 func TestStartContainerWith_RunnerError(t *testing.T) {
 	require := require.New(t)
-	result := ContainerResult{Name: "my-container"}
+	result := ContainerResult{Name: testContainerName2}
 
 	either := startContainerWith(fakeRunnerFail, result)()
 	require.True(E.IsLeft(either))

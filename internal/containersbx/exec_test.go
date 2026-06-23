@@ -25,8 +25,8 @@ func TestBuildCreateArgs_WithoutSkillsPath(t *testing.T) {
 			Input: Input{
 				SkillsAbsPath: "",
 			},
-			KitName:    "my-kit",
-			OutputPath: "/tmp/out.zip",
+			KitName:    testKitName,
+			OutputPath: testOutputPath,
 		},
 	}
 
@@ -36,7 +36,7 @@ func TestBuildCreateArgs_WithoutSkillsPath(t *testing.T) {
 	require.Equal("create", args[0])
 	require.Equal(agentKitName, args[1])
 	require.Equal("--kit", args[2])
-	require.Equal("/tmp/out.zip", args[3])
+	require.Equal(testOutputPath, args[3])
 }
 
 func TestBuildCreateArgs_WithSkillsPath(t *testing.T) {
@@ -46,8 +46,8 @@ func TestBuildCreateArgs_WithSkillsPath(t *testing.T) {
 			Input: Input{
 				SkillsAbsPath: "/abs/skills",
 			},
-			KitName:    "my-kit",
-			OutputPath: "/tmp/out.zip",
+			KitName:    testKitName,
+			OutputPath: testOutputPath,
 		},
 	}
 
@@ -57,7 +57,7 @@ func TestBuildCreateArgs_WithSkillsPath(t *testing.T) {
 	require.Equal("create", args[0])
 	require.Equal(agentKitName, args[1])
 	require.Equal("--kit", args[2])
-	require.Equal("/tmp/out.zip", args[3])
+	require.Equal(testOutputPath, args[3])
 	require.Equal("/abs/skills:ro", args[4])
 }
 
@@ -93,7 +93,7 @@ func TestResolveSkillsPath_NonEmptyPath(t *testing.T) {
 func TestValidateKit_Success(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
-		State: execState{TempDir: "/tmp/sbx-test"},
+		State: execState{TempDir: tempDirPath},
 		Run:   fakeSbxRunner,
 	}
 
@@ -104,13 +104,13 @@ func TestValidateKit_Success(t *testing.T) {
 		func(_ error) stepState { return stepState{} },
 		F.Identity[stepState],
 	)(either)
-	require.Equal("/tmp/sbx-test", result.State.TempDir)
+	require.Equal(tempDirPath, result.State.TempDir)
 }
 
 func TestValidateKit_Failure(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
-		State: execState{TempDir: "/tmp/sbx-test"},
+		State: execState{TempDir: tempDirPath},
 		Run:   fakeSbxRunnerFail,
 	}
 
@@ -159,9 +159,9 @@ func TestCreateWithSecret_Success(t *testing.T) {
 	ss := stepState{
 		State: execState{
 			Input:      Input{ShouldCreate: true},
-			APIKey:     "sk-abc123",
-			KitName:    "test-kit",
-			OutputPath: "/tmp/kit.zip",
+			APIKey:     testAPIKey2,
+			KitName:    testKitName2,
+			OutputPath: kittempZipPath,
 		},
 		Run: fakeSbxRunner,
 	}
@@ -179,7 +179,7 @@ func TestCreateWithSecret_Success(t *testing.T) {
 func TestCreateWithSecret_StoreSecretFails(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
-		State: execState{Input: Input{ShouldCreate: true}, APIKey: "sk-abc123"},
+		State: execState{Input: Input{ShouldCreate: true}, APIKey: testAPIKey2},
 		Run:   fakeSbxRunnerFail,
 	}
 
@@ -198,9 +198,9 @@ func TestCreateWithSecret_CreateFails(t *testing.T) {
 	ss := stepState{
 		State: execState{
 			Input:      Input{ShouldCreate: true},
-			APIKey:     "sk-abc123",
-			KitName:    "test-kit",
-			OutputPath: "/tmp/kit.zip",
+			APIKey:     testAPIKey2,
+			KitName:    testKitName2,
+			OutputPath: kittempZipPath,
 		},
 		Run: fakeSbxRunnerFailOnSecond(),
 	}
@@ -219,9 +219,9 @@ func TestPackKit_Success(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
 		State: execState{
-			TempDir:    "/tmp/sbx-test",
-			OutputPath: "/tmp/kit.zip",
-			KitName:    "test-kit",
+			TempDir:    tempDirPath,
+			OutputPath: kittempZipPath,
+			KitName:    testKitName2,
 		},
 		Run: fakeSbxRunner,
 	}
@@ -233,7 +233,7 @@ func TestPackKit_Success(t *testing.T) {
 		func(_ error) stepState { return stepState{} },
 		F.Identity[stepState],
 	)(either)
-	require.Equal("/tmp/kit.zip", result.State.Result.OutputPath)
+	require.Equal(kittempZipPath, result.State.Result.OutputPath)
 	require.Equal(agentKitName, result.State.Result.KitName)
 }
 
@@ -241,9 +241,9 @@ func TestPackKit_Failure(t *testing.T) {
 	require := require.New(t)
 	ss := stepState{
 		State: execState{
-			TempDir:    "/tmp/sbx-test",
-			OutputPath: "/tmp/kit.zip",
-			KitName:    "test-kit",
+			TempDir:    tempDirPath,
+			OutputPath: kittempZipPath,
+			KitName:    testKitName2,
 		},
 		Run: fakeSbxRunnerFail,
 	}

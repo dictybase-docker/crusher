@@ -42,7 +42,7 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 // Command returns the CLI definition for the create subcommand.
 func Command() *cli.Command {
 	return &cli.Command{
-		Name:  "create",
+		Name:  createCmd,
 		Usage: "Create a Crush sandbox container",
 		Flags: []cli.Flag{
 			&cli.StringFlag{

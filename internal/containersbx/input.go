@@ -41,6 +41,9 @@ const (
 
 	// sbxBinary is the name of the sbx CLI binary.
 	sbxBinary = "sbx"
+
+	// createCmd is the name of the sbx create subcommand.
+	createCmd = "create"
 )
 
 // Input holds all parameters for kit generation and optional sandbox creation.

@@ -5,14 +5,18 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 )
 
-const containerBinary = "docker"
+const (
+	containerBinary = "docker"
+	createCmd       = "create"
+	nameFlag        = "--name"
+)
 
 // RenderCommand builds the CommandSpec for "container create".
 func RenderCommand(rinput ResolvedInput) CommandSpec {
 	return F.Pipe8(
-		A.Of("create"),
+		A.Of(createCmd),
 		A.Concat([]string{
-			"--name",
+			nameFlag,
 			rinput.ContainerName,
 		}),
 		A.Concat(F.Pipe1(
