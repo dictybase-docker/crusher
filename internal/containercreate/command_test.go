@@ -8,6 +8,11 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+const (
+	testSkillsPath = "/host/skills"
+	testAPIKeyAlt  = "test-api-key"
+)
+
 func TestInputFromCommand_Defaults(t *testing.T) {
 	require := require.New(t)
 	app := &cli.Command{
@@ -17,7 +22,7 @@ func TestInputFromCommand_Defaults(t *testing.T) {
 			return nil
 		},
 	}
-	err := app.Run(context.Background(), []string{"create"})
+	err := app.Run(context.Background(), []string{createCmd})
 	require.Error(err)
 	require.Contains(err.Error(), "config")
 }
@@ -28,22 +33,22 @@ func TestInputFromCommand_MinimalInput(t *testing.T) {
 		Flags: Command().Flags,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
-			require.Equal("crusher:latest", input.ImageName)
-			require.Equal("/host/config", input.ConfigPath)
-			require.Equal("/host/data", input.DataPath)
-			require.Equal("/host/skills", input.SkillsPath)
-			require.Equal("test-api-key", input.APIKey)
+			require.Equal(DefaultImageName, input.ImageName)
+			require.Equal(testConfigPath, input.ConfigPath)
+			require.Equal(testDataPath, input.DataPath)
+			require.Equal(testSkillsPath, input.SkillsPath)
+			require.Equal(testAPIKeyAlt, input.APIKey)
 			require.Empty(input.ContainerName)
 
 			return nil
 		},
 	}
 	_ = app.Run(context.Background(), []string{
-		"create",
-		"--config", "/host/config",
-		"--data", "/host/data",
-		"--skills", "/host/skills",
-		"--api-key", "test-api-key",
+		createCmd,
+		configFlag, testConfigPath,
+		dataFlag, testDataPath,
+		skillsFlag, testSkillsPath,
+		apiKeyFlag, testAPIKeyAlt,
 	})
 }
 
@@ -54,11 +59,11 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal("myimage:v2", input.ImageName)
-			require.Equal("mycontainer", input.ContainerName)
-			require.Equal("/host/config", input.ConfigPath)
-			require.Equal("/host/data", input.DataPath)
-			require.Equal("/host/skills", input.SkillsPath)
-			require.Equal("test-api-key", input.APIKey)
+			require.Equal(testContainerName, input.ContainerName)
+			require.Equal(testConfigPath, input.ConfigPath)
+			require.Equal(testDataPath, input.DataPath)
+			require.Equal(testSkillsPath, input.SkillsPath)
+			require.Equal(testAPIKeyAlt, input.APIKey)
 			require.Equal("ghp_token", input.GitHubToken)
 			require.Equal("/host/workspace", input.WorkspacePath)
 
@@ -66,13 +71,13 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 		},
 	}
 	_ = app.Run(context.Background(), []string{
-		"create",
+		createCmd,
 		"--image", "myimage:v2",
-		"--name", "mycontainer",
-		"--config", "/host/config",
-		"--data", "/host/data",
-		"--skills", "/host/skills",
-		"--api-key", "test-api-key",
+		nameFlag, testContainerName,
+		configFlag, testConfigPath,
+		dataFlag, testDataPath,
+		skillsFlag, testSkillsPath,
+		apiKeyFlag, testAPIKeyAlt,
 		"--github-token", "ghp_token",
 		"--workspace", "/host/workspace",
 	})
@@ -90,11 +95,11 @@ func TestInputFromCommand_VolumesFlag(t *testing.T) {
 		},
 	}
 	_ = app.Run(context.Background(), []string{
-		"create",
-		"--config", "/host/config",
-		"--data", "/host/data",
-		"--skills", "/host/skills",
-		"--api-key", "test-api-key",
+		createCmd,
+		configFlag, testConfigPath,
+		dataFlag, testDataPath,
+		skillsFlag, testSkillsPath,
+		apiKeyFlag, testAPIKeyAlt,
 		"--volume", "/host/vol1",
 		"--volume", "/host/vol2",
 	})
@@ -112,11 +117,11 @@ func TestInputFromCommand_ImageShortFlag(t *testing.T) {
 		},
 	}
 	_ = app.Run(context.Background(), []string{
-		"create",
+		createCmd,
 		"-i", "myimage:latest",
-		"--config", "/host/config",
-		"--data", "/host/data",
-		"--skills", "/host/skills",
-		"--api-key", "test-api-key",
+		configFlag, testConfigPath,
+		dataFlag, testDataPath,
+		skillsFlag, testSkillsPath,
+		apiKeyFlag, testAPIKeyAlt,
 	})
 }

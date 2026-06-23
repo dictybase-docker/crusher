@@ -76,7 +76,7 @@ func Command() *cli.Command {
 				Required: true,
 			},
 			&cli.BoolFlag{
-				Name:  "create",
+				Name:  createCmd,
 				Usage: "Create the sandbox instance after packing",
 			},
 			&cli.StringFlag{

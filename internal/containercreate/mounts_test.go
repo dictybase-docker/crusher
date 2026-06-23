@@ -44,8 +44,8 @@ func TestRenderMount_ReadwriteMount(t *testing.T) {
 func TestRenderAllMounts_MultipleMounts(t *testing.T) {
 	require := require.New(t)
 	mounts := []MountSpec{
-		{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-		{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+		{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+		{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 	}
 
 	result := F.Pipe1(

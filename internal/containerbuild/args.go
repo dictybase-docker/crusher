@@ -9,6 +9,12 @@ import (
 	S "github.com/IBM/fp-go/v2/string"
 )
 
+const (
+	buildCmd                   = "build"
+	latestTag                  = "latest"
+	defaultGolangciLintVersion = "2.11.4"
+)
+
 // nameTag is a Semigroup that concatenates the name and tag with a ":" in
 // between.
 var nameTag = S.IntersperseSemigroup(":")
@@ -50,7 +56,7 @@ func RenderCommand(r Input, path string) CommandSpec {
 	return CommandSpec{
 		Bin: containerBinary,
 		Args: A.ArrayConcatAll(
-			[]string{"build", "--file", path},
+			[]string{buildCmd, "--file", path},
 			renderTagArgs(r),
 			renderBuildArgs(r.BuildArgs),
 			[]string{"."},

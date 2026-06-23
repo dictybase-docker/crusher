@@ -10,7 +10,7 @@ import (
 )
 
 func TestNormalizeInput_AllDefaults(t *testing.T) {
-	input := Input{APIKey: "test-key"}
+	input := Input{APIKey: testAPIKeyDefault}
 	result := NormalizeInput(input)
 
 	assert.NotEmpty(t, result.OutputPath)
@@ -22,25 +22,25 @@ func TestNormalizeInput_AllDefaults(t *testing.T) {
 }
 
 func TestNormalizeInput_BlankOutputPath(t *testing.T) {
-	input := Input{APIKey: "test-key", OutputPath: ""}
+	input := Input{APIKey: testAPIKeyDefault, OutputPath: ""}
 	result := NormalizeInput(input)
 	assert.Equal(t, DefaultOutputPath, result.OutputPath)
 }
 
 func TestNormalizeInput_BlankKitName(t *testing.T) {
-	input := Input{APIKey: "test-key", KitName: ""}
+	input := Input{APIKey: testAPIKeyDefault, KitName: ""}
 	result := NormalizeInput(input)
 	assert.Regexp(t, `^crush-sbx[a-zA-Z0-9]{6}$`, result.KitName)
 }
 
 func TestNormalizeInput_AgentImageDefault(t *testing.T) {
-	input := Input{APIKey: "test-key", AgentImage: ""}
+	input := Input{APIKey: testAPIKeyDefault, AgentImage: ""}
 	result := NormalizeInput(input)
 	assert.Equal(t, DefaultAgentImage, result.AgentImage)
 }
 
 func TestNormalizeInput_AgentImageCustom(t *testing.T) {
-	input := Input{APIKey: "test-key", AgentImage: "custom/image:v1"}
+	input := Input{APIKey: testAPIKeyDefault, AgentImage: "custom/image:v1"}
 	result := NormalizeInput(input)
 	assert.Equal(t, "custom/image:v1", result.AgentImage)
 }
@@ -53,7 +53,7 @@ func TestValidateInput_MissingAPIKey(t *testing.T) {
 
 func TestValidateInput_NonExistentConfig(t *testing.T) {
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		ConfigPath: "/nonexistent/config.json",
 	}
 	either := ValidateInput(input)
@@ -62,7 +62,7 @@ func TestValidateInput_NonExistentConfig(t *testing.T) {
 
 func TestValidateInput_NonExistentSkills(t *testing.T) {
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		SkillsPath: "/nonexistent/skills",
 	}
 	either := ValidateInput(input)
@@ -75,12 +75,12 @@ func TestValidateInput_AllExplicit(t *testing.T) {
 	os.WriteFile(configPath, []byte("{}"), 0o600)
 
 	input := Input{
-		APIKey:              "test-key",
+		APIKey:              testAPIKeyDefault,
 		OutputPath:          "test-output.zip",
 		ConfigPath:          configPath,
 		KitName:             "my-sandbox",
 		CrushVersion:        "v1.0.0",
-		GolangciLintVersion: "2.0.0",
+		GolangciLintVersion: testGLVersion,
 		GoVersion:           "1.22.0",
 	}
 	either := ValidateInput(input)
@@ -89,7 +89,7 @@ func TestValidateInput_AllExplicit(t *testing.T) {
 
 func TestValidateInput_OutputParentNotExist(t *testing.T) {
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		OutputPath: "/nonexistent/dir/file.zip",
 	}
 	either := ValidateInput(input)
@@ -102,7 +102,7 @@ func TestValidateInput_ValidWithSkillsPath(t *testing.T) {
 	os.WriteFile(configPath, []byte("{}"), 0o600)
 
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		ConfigPath: configPath,
 		SkillsPath: tmpDir,
 	}
@@ -116,7 +116,7 @@ func TestValidateInput_SkillsPathNotDirectory(t *testing.T) {
 	os.WriteFile(filePath, []byte("data"), 0o600)
 
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		SkillsPath: filePath,
 	}
 	either := ValidateInput(input)
@@ -129,7 +129,7 @@ func TestValidateInput_SkillsPathEmptyDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		SkillsPath: tmpDir,
 	}
 	either := ValidateInput(input)
@@ -142,7 +142,7 @@ func TestValidateInput_ValidWithConfigPath(t *testing.T) {
 	os.WriteFile(configPath, []byte("{}"), 0o600)
 
 	input := Input{
-		APIKey:     "test-key",
+		APIKey:     testAPIKeyDefault,
 		ConfigPath: configPath,
 	}
 	either := ValidateInput(input)
@@ -150,7 +150,7 @@ func TestValidateInput_ValidWithConfigPath(t *testing.T) {
 }
 
 func TestValidateOutputParent_EmptyPath(t *testing.T) {
-	input := Input{APIKey: "test-key", OutputPath: ""}
+	input := Input{APIKey: testAPIKeyDefault, OutputPath: ""}
 	either := validateOutputParent(input)
 	assert.True(t, E.IsRight(either))
 }

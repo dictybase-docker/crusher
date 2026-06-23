@@ -211,7 +211,7 @@ func buildCreateArgs(ss stepState) []string {
 		O.Fold(
 			func() []string {
 				return []string{
-					"create",
+					createCmd,
 					agentKitName,
 					"--kit",
 					ss.State.OutputPath,
@@ -219,7 +219,7 @@ func buildCreateArgs(ss stepState) []string {
 			},
 			func(p string) []string {
 				return []string{
-					"create",
+					createCmd,
 					agentKitName,
 					"--kit",
 					ss.State.OutputPath,

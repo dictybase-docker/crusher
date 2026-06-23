@@ -6,40 +6,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testContainerName  = "test-container"
+	testConfigPath     = "/host/config"
+	testDataPath       = "/host/data"
+	testAPIKey         = "test-key"
+	testContainerName2 = "my-container"
+	configFlag         = "--config"
+	dataFlag           = "--data"
+	skillsFlag         = "--skills"
+	apiKeyFlag         = "--api-key"
+)
+
 func TestRenderCommand_MinimalInput(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
 
 	require.Equal("docker", spec.Bin)
-	require.Equal("create", spec.Args[0])
-	require.Contains(spec.Args, "--name")
-	require.Contains(spec.Args, "test-container")
-	require.Contains(spec.Args, "crusher:latest")
+	require.Equal(createCmd, spec.Args[0])
+	require.Contains(spec.Args, nameFlag)
+	require.Contains(spec.Args, testContainerName)
+	require.Contains(spec.Args, DefaultImageName)
 }
 
 func TestRenderCommand_WithWorkdir(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 			{HostPath: "/host/workspace", TargetPath: WorkspaceTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
@@ -51,14 +63,14 @@ func TestRenderCommand_WithWorkdir(t *testing.T) {
 func TestRenderCommand_WithoutWorkdir(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: WorkspaceTarget,
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
@@ -71,13 +83,13 @@ func TestRenderCommand_ImageNameIsLastArg(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
 		ImageName:     "myimage:v1",
-		ContainerName: "test-container",
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
@@ -89,14 +101,14 @@ func TestRenderCommand_ImageNameIsLastArg(t *testing.T) {
 func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
@@ -110,14 +122,14 @@ func TestRenderCommand_EnvVarsPresent(t *testing.T) {
 func TestRenderCommand_GitHubTokenPresent(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir:     "",
-		APIKey:      "test-key",
+		APIKey:      testAPIKey,
 		GitHubToken: "ghp_abc123",
 	}
 
@@ -129,14 +141,14 @@ func TestRenderCommand_GitHubTokenPresent(t *testing.T) {
 func TestRenderCommand_GitHubTokenOmitted(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir:     "",
-		APIKey:      "test-key",
+		APIKey:      testAPIKey,
 		GitHubToken: "",
 	}
 
@@ -150,14 +162,14 @@ func TestRenderCommand_GitHubTokenOmitted(t *testing.T) {
 func TestRenderCommand_AlwaysHasInteractiveAndTTY(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
@@ -169,30 +181,30 @@ func TestRenderCommand_AlwaysHasInteractiveAndTTY(t *testing.T) {
 func TestBuildArgs_ArgsOrder(t *testing.T) {
 	require := require.New(t)
 	resolved := ResolvedInput{
-		ImageName:     "crusher:latest",
-		ContainerName: "test-container",
+		ImageName:     DefaultImageName,
+		ContainerName: testContainerName,
 		Mounts: []MountSpec{
-			{HostPath: "/host/config", TargetPath: ConfigTarget, Readonly: true},
-			{HostPath: "/host/data", TargetPath: DataTarget, Readonly: false},
+			{HostPath: testConfigPath, TargetPath: ConfigTarget, Readonly: true},
+			{HostPath: testDataPath, TargetPath: DataTarget, Readonly: false},
 		},
 		Workdir: "",
-		APIKey:  "test-key",
+		APIKey:  testAPIKey,
 	}
 
 	spec := RenderCommand(resolved)
 
 	require.GreaterOrEqual(len(spec.Args), 3)
-	require.Equal("create", spec.Args[0])
+	require.Equal(createCmd, spec.Args[0])
 
 	nameIdx := -1
 
 	for i, arg := range spec.Args {
-		if arg == "--name" {
+		if arg == nameFlag {
 			nameIdx = i
 			break
 		}
 	}
 
 	require.GreaterOrEqual(nameIdx, 0)
-	require.Equal("test-container", spec.Args[nameIdx+1])
+	require.Equal(testContainerName, spec.Args[nameIdx+1])
 }

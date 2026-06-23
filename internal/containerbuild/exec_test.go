@@ -26,8 +26,8 @@ func fakeDockerfileSource(path string) IOE.IOEither[error, DockerfileResource] {
 func TestExecuteWith_HappyPath(t *testing.T) {
 	require := require.New(t)
 	input := Input{
-		Name:             "testimage",
-		Tags:             []string{"latest"},
+		Name:             testImageName,
+		Tags:             []string{defaultTag},
 		BuildArgs:        map[string]string{},
 		Ctx:              context.Background(),
 		DockerfileSource: fakeDockerfileSource("/fake/Dockerfile"),
@@ -40,8 +40,8 @@ func TestExecuteWith_HappyPath(t *testing.T) {
 func TestExecuteWith_RunnerError(t *testing.T) {
 	require := require.New(t)
 	input := Input{
-		Name:             "testimage",
-		Tags:             []string{"latest"},
+		Name:             testImageName,
+		Tags:             []string{defaultTag},
 		BuildArgs:        map[string]string{},
 		Ctx:              context.Background(),
 		DockerfileSource: fakeDockerfileSource("/fake/Dockerfile"),
@@ -68,8 +68,8 @@ func TestExecuteWith_FileSource(t *testing.T) {
 	}
 
 	input := Input{
-		Name:             "testimage",
-		Tags:             []string{"latest"},
+		Name:             testImageName,
+		Tags:             []string{defaultTag},
 		BuildArgs:        map[string]string{},
 		Ctx:              context.Background(),
 		DockerfileSource: fakeDockerfileSource("/custom/Dockerfile"),

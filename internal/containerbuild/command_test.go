@@ -15,19 +15,19 @@ func TestInputFromCommand_Defaults(t *testing.T) {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			input := InputFromCommand(ctx, cmd)
 			require.Equal("crusher", input.Name)
-			require.Equal([]string{"latest"}, input.Tags)
+			require.Equal([]string{defaultTag}, input.Tags)
 			require.NotNil(input.BuildArgs)
 			require.Equal("2.11.4", input.BuildArgs["GOLANGCI_LINT_VERSION"])
-			require.Equal("latest", input.BuildArgs["CRUSH_VERSION"])
-			require.Equal("latest", input.BuildArgs["GOTESTSUM_VERSION"])
-			require.Equal("latest", input.BuildArgs["MOXIDE_VERSION"])
-			require.Equal("latest", input.BuildArgs["SEM_VERSION"])
-			require.Equal("latest", input.BuildArgs["RTK_VERSION"])
+			require.Equal(defaultTag, input.BuildArgs["CRUSH_VERSION"])
+			require.Equal(defaultTag, input.BuildArgs["GOTESTSUM_VERSION"])
+			require.Equal(defaultTag, input.BuildArgs["MOXIDE_VERSION"])
+			require.Equal(defaultTag, input.BuildArgs["SEM_VERSION"])
+			require.Equal(defaultTag, input.BuildArgs["RTK_VERSION"])
 
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"build"})
+	_ = app.Run(context.Background(), []string{buildCmd})
 }
 
 func TestInputFromCommand_CustomNameAndTags(t *testing.T) {
@@ -44,7 +44,7 @@ func TestInputFromCommand_CustomNameAndTags(t *testing.T) {
 	}
 	_ = app.Run(
 		context.Background(),
-		[]string{"build", "--name", "myimage", "--tag", "v1", "--tag", "v2"},
+		[]string{buildCmd, "--name", "myimage", "--tag", "v1", "--tag", "v2"},
 	)
 }
 
@@ -60,7 +60,7 @@ func TestInputFromCommand_EmbedFlag(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"build", "--embed"})
+	_ = app.Run(context.Background(), []string{buildCmd, "--embed"})
 }
 
 func TestInputFromCommand_CustomFileFlag(t *testing.T) {
@@ -74,7 +74,7 @@ func TestInputFromCommand_CustomFileFlag(t *testing.T) {
 			return nil
 		},
 	}
-	_ = app.Run(context.Background(), []string{"build", "--file", "/custom/Dockerfile"})
+	_ = app.Run(context.Background(), []string{buildCmd, "--file", "/custom/Dockerfile"})
 }
 
 func TestInputFromCommand_VersionFlags(t *testing.T) {
@@ -91,7 +91,7 @@ func TestInputFromCommand_VersionFlags(t *testing.T) {
 		},
 	}
 	_ = app.Run(context.Background(), []string{
-		"build",
+		buildCmd,
 		"--golangci-lint-version", "3.0.0",
 		"--crush-version", "v2",
 		"--gotestsum-version", "1.5.0",
