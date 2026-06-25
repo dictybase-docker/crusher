@@ -23,10 +23,6 @@ type specTemplateData struct {
 	KitName             string
 	AgentImage          string
 	GolangciLintVersion string
-	GotestsumVersion    string
-	MoxideVersion       string
-	SemVersion          string
-	RtkVersion          string
 	// Resolved from providerConfigs[input.Provider]:
 	ProviderID      string // the map key: "openrouter", "anthropic", etc.
 	ServiceDomain   string
@@ -113,10 +109,6 @@ func buildSpecData(input Input) IOE.IOEither[error, specTemplateData] {
 				KitName:               input.KitName,
 				AgentImage:            input.AgentImage,
 				GolangciLintVersion:   input.GolangciLintVersion,
-				GotestsumVersion:      input.GotestsumVersion,
-				MoxideVersion:         input.MoxideVersion,
-				SemVersion:            input.SemVersion,
-				RtkVersion:            input.RtkVersion,
 				ProviderID:            input.Provider,
 				ServiceDomain:         ctx.ServiceDomain,
 				ProviderDomain:        ctx.ProviderDomain,

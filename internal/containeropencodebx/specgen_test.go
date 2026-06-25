@@ -59,10 +59,6 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 		KitName:             testKitName,
 		AgentImage:          "custom/image:v1",
 		GolangciLintVersion: testGLVersion,
-		GotestsumVersion:    "1.8.0",
-		MoxideVersion:       "v0.5.0",
-		SemVersion:          "v4.0.0",
-		RtkVersion:          "v2.0.0",
 		Provider:            providerAnthropic,
 	}
 	either := buildSpecData(input)()
@@ -93,10 +89,6 @@ func TestGenerateSpec_NoUnresolvedVars(t *testing.T) {
 				KitName:             testKitName,
 				AgentImage:          DefaultAgentImage,
 				GolangciLintVersion: DefaultGolangciLintVersion,
-				GotestsumVersion:    DefaultGotestsumVersion,
-				MoxideVersion:       DefaultMoxideVersion,
-				SemVersion:          DefaultSemVersion,
-				RtkVersion:          DefaultRtkVersion,
 				Provider:            p,
 			}
 			either := GenerateSpec(input)()
@@ -126,10 +118,6 @@ func TestGenerateSpec_ContainsProviderDomain(t *testing.T) {
 				KitName:             testKitName,
 				AgentImage:          DefaultAgentImage,
 				GolangciLintVersion: DefaultGolangciLintVersion,
-				GotestsumVersion:    DefaultGotestsumVersion,
-				MoxideVersion:       DefaultMoxideVersion,
-				SemVersion:          DefaultSemVersion,
-				RtkVersion:          DefaultRtkVersion,
 				Provider:            c.provider,
 			}
 			either := GenerateSpec(input)()
@@ -148,10 +136,6 @@ func TestGenerateSpec_ContainsOpenCodeConfigContent(t *testing.T) {
 		KitName:             testKitName,
 		AgentImage:          DefaultAgentImage,
 		GolangciLintVersion: DefaultGolangciLintVersion,
-		GotestsumVersion:    DefaultGotestsumVersion,
-		MoxideVersion:       DefaultMoxideVersion,
-		SemVersion:          DefaultSemVersion,
-		RtkVersion:          DefaultRtkVersion,
 		Provider:            providerOpenRouter,
 	}
 	either := GenerateSpec(input)()
@@ -169,10 +153,6 @@ func TestGenerateSpec_ContainsKitName(t *testing.T) {
 		KitName:             "display-name-test",
 		AgentImage:          DefaultAgentImage,
 		GolangciLintVersion: DefaultGolangciLintVersion,
-		GotestsumVersion:    DefaultGotestsumVersion,
-		MoxideVersion:       DefaultMoxideVersion,
-		SemVersion:          DefaultSemVersion,
-		RtkVersion:          DefaultRtkVersion,
 		Provider:            providerOpenRouter,
 	}
 	either := GenerateSpec(input)()
