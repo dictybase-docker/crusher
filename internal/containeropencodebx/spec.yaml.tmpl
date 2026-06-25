@@ -1,0 +1,62 @@
+schemaVersion: "1"
+kind: sandbox
+name: opencode
+displayName: {{.KitName}}
+description: OpenCode AI coding agent with full Go development tooling
+
+sandbox:
+  image: "{{.AgentImage}}"
+  aiFilename: AGENTS.md
+
+network:
+  serviceDomains:
+    {{.ServiceDomain}}: {{.ProviderID}}
+  serviceAuth:
+    {{.ProviderID}}:
+      headerName: {{.AuthHeader}}
+      valueFormat: "{{.AuthValueFormat}}"
+  allowedDomains:
+    - "{{.ProviderDomain}}:443"
+    - "github.com:443"
+    - "api.github.com:443"
+    - "objects.githubusercontent.com:443"
+    - "opencode.ai:443"
+    - "go.dev:443"
+    - "proxy.golang.org:443"
+    - "sum.golang.org:443"
+
+credentials:
+  sources:
+    {{.ProviderID}}:
+      env:
+        - {{.APIKeyEnvVar}}
+
+environment:
+  proxyManaged:
+    - {{.APIKeyEnvVar}}
+  variables:
+    OPENCODE_CONFIG_CONTENT: '{{.OpenCodeConfigContent}}'
+    PATH: "/home/agent/.local/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    HOME: "/home/agent"
+
+agentContext: |
+  ## Sandbox environment
+
+  You are running inside a Docker sbx sandbox (microVM). Your workspace is
+  mounted at its absolute host path. `sudo` is passwordless.
+
+  ## Available tools
+
+  | Tool             | Purpose                                        |
+  |------------------|------------------------------------------------|
+  | `opencode`       | AI coding agent (this process)                 |
+  | `golangci-lint`  | Go linter (v{{.GolangciLintVersion}})          |
+  | `gotestsum`      | Structured Go test runner                      |
+  | `gopls`          | Go language server                             |
+  | `sem`            | Semantic code intelligence CLI                 |
+  | `rtk`            | Rust toolkit                                   |
+  | `markdown-oxide` | Markdown LSP                                   |
+  | `git`, `rg`, `fd`, `gh` | Standard dev utilities                  |
+
+  Use `gotestsum --format pkgname-and-test-fails -- ./...` for Go tests and
+  `golangci-lint run ./...` for linting.
