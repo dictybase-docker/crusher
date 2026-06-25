@@ -131,16 +131,36 @@ func Command() *cli.Command {
 
 // Action is the build subcommand entry point.
 // Pipeline: validate tags → acquire dockerfile → render args → run process → release.
+// Folds into Pair; printing (a no-op for build) is outside the pipeline.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	return F.Pipe5(
+	result := F.Pipe5(
 		InputFromCommand(ctx, cmd),
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
 		FP.ToEither[error, F.Void],
 		E.Fold(
-			F.Identity[error],
-			func(F.Void) error { return nil },
+			func(err error) P.Pair[error, F.Void] {
+				return P.MakePair(err, F.VOID)
+			},
+			func(v F.Void) P.Pair[error, F.Void] {
+				return P.MakePair[error](nil, v)
+			},
 		),
 	)
+
+	if err := P.Head(result); err != nil {
+		return err
+	}
+
+	F.Pipe2(result, P.Tail, printResult)
+
+	return nil
+}
+
+// printResult is a no-op for the build subcommand: the build pipeline
+// produces no user-facing result to surface. It exists to keep the Action
+// shape consistent with the other subcommands.
+func printResult(F.Void) F.Void {
+	return F.VOID
 }
