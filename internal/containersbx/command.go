@@ -6,6 +6,7 @@ import (
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+	P "github.com/IBM/fp-go/v2/pair"
 	Str "github.com/IBM/fp-go/v2/string"
 	FP "github.com/dictybase-docker/crusher/internal/fp"
 	"github.com/gookit/color"
@@ -124,24 +125,35 @@ func Command() *cli.Command {
 }
 
 // Action is the sbx subcommand entry point.
+// Pipeline: normalize input → validate input → execute kit pipeline → fold into Pair.
+// Printing is outside the pipeline.
 func Action(ctx context.Context, cmd *cli.Command) error {
-	return F.Pipe5(
+	result := F.Pipe5(
 		InputFromCommand(ctx, cmd),
 		ValidateInput,
 		IOE.FromEither[error],
 		IOE.Chain(Execute),
 		FP.ToEither[error, KitResult],
 		E.Fold(
-			F.Identity[error],
-			func(r KitResult) error {
-				printResult(r)
-				return nil
+			func(err error) P.Pair[error, KitResult] {
+				return P.MakePair(err, KitResult{})
+			},
+			func(r KitResult) P.Pair[error, KitResult] {
+				return P.MakePair[error](nil, r)
 			},
 		),
 	)
+
+	if err := P.Head(result); err != nil {
+		return err
+	}
+
+	F.Pipe2(result, P.Tail, printResult)
+
+	return nil
 }
 
-func printResult(r KitResult) {
+func printResult(r KitResult) F.Void {
 	nord8bold.Println("✓ Kit validated")
 	nord4.Print("✓ Kit packed: ")
 	nord8bold.Println(r.OutputPath)
@@ -161,4 +173,6 @@ func printResult(r KitResult) {
 	}
 
 	color.Println()
+
+	return F.VOID
 }
