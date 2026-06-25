@@ -91,26 +91,6 @@ func NormalizeInput(input Input) Input {
 			O.FromPredicate(isNonBlank),
 			O.GetOrElse(func() string { return DefaultGolangciLintVersion }),
 		),
-		GotestsumVersion: F.Pipe2(
-			input.GotestsumVersion,
-			O.FromPredicate(isNonBlank),
-			O.GetOrElse(func() string { return DefaultGotestsumVersion }),
-		),
-		MoxideVersion: F.Pipe2(
-			input.MoxideVersion,
-			O.FromPredicate(isNonBlank),
-			O.GetOrElse(func() string { return DefaultMoxideVersion }),
-		),
-		SemVersion: F.Pipe2(
-			input.SemVersion,
-			O.FromPredicate(isNonBlank),
-			O.GetOrElse(func() string { return DefaultSemVersion }),
-		),
-		RtkVersion: F.Pipe2(
-			input.RtkVersion,
-			O.FromPredicate(isNonBlank),
-			O.GetOrElse(func() string { return DefaultRtkVersion }),
-		),
 	}
 }
 

@@ -16,10 +16,6 @@ func TestNormalizeInput_AllDefaults(t *testing.T) {
 	assert.Equal(t, DefaultAgentImage, result.AgentImage)
 	assert.Equal(t, DefaultProvider, result.Provider)
 	assert.Equal(t, DefaultGolangciLintVersion, result.GolangciLintVersion)
-	assert.Equal(t, DefaultGotestsumVersion, result.GotestsumVersion)
-	assert.Equal(t, DefaultMoxideVersion, result.MoxideVersion)
-	assert.Equal(t, DefaultSemVersion, result.SemVersion)
-	assert.Equal(t, DefaultRtkVersion, result.RtkVersion)
 	assert.NotEmpty(t, result.KitName)
 }
 

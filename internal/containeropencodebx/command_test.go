@@ -65,10 +65,6 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 			require.True(input.ShouldCreate)
 			require.Equal("custom/image:v3", input.AgentImage)
 			require.Equal(testGLVersion, input.GolangciLintVersion)
-			require.Equal("1.8.0", input.GotestsumVersion)
-			require.Equal("v0.5.0", input.MoxideVersion)
-			require.Equal("v4.0.0", input.SemVersion)
-			require.Equal("v2.0.0", input.RtkVersion)
 
 			return nil
 		},
@@ -82,10 +78,6 @@ func TestInputFromCommand_AllFlags(t *testing.T) {
 		"--create",
 		"--image", "custom/image:v3",
 		"--golangci-lint-version", testGLVersion,
-		"--gotestsum-version", "1.8.0",
-		"--moxide-version", "v0.5.0",
-		"--sem-version", "v4.0.0",
-		"--rtk-version", "v2.0.0",
 	})
 }
 

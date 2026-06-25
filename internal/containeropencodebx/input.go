@@ -25,19 +25,11 @@ const (
 	DefaultAgentImage = "ghcr.io/dictybase/crusher:opencode-sbx-base"
 
 	// DefaultGolangciLintVersion is the default golangci-lint version.
+	// It is the only version flag retained because it is the sole value that
+	// surfaces in the generated spec.yaml agentContext text. The gotestsum,
+	// moxide, sem, and rtk version flags were removed because the packed kit
+	// does not vary with them — the sandbox image ships fixed versions.
 	DefaultGolangciLintVersion = "2.11.4"
-
-	// DefaultGotestsumVersion is the default gotestsum version.
-	DefaultGotestsumVersion = "latest"
-
-	// DefaultMoxideVersion is the default markdown-oxide version.
-	DefaultMoxideVersion = "latest"
-
-	// DefaultSemVersion is the default sem version.
-	DefaultSemVersion = "latest"
-
-	// DefaultRtkVersion is the default rtk version.
-	DefaultRtkVersion = "latest"
 
 	// DefaultProvider is the default AI provider.
 	DefaultProvider = providerOpenRouter
@@ -137,10 +129,6 @@ type Input struct {
 	ShouldCreate        bool
 	AgentImage          string
 	GolangciLintVersion string
-	GotestsumVersion    string
-	MoxideVersion       string
-	SemVersion          string
-	RtkVersion          string
 	Ctx                 context.Context
 }
 

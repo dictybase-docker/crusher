@@ -33,10 +33,6 @@ func InputFromCommand(ctx context.Context, cmd *cli.Command) Input {
 		ShouldCreate:        cmd.Bool("create"),
 		AgentImage:          cmd.String("image"),
 		GolangciLintVersion: cmd.String("golangci-lint-version"),
-		GotestsumVersion:    cmd.String("gotestsum-version"),
-		MoxideVersion:       cmd.String("moxide-version"),
-		SemVersion:          cmd.String("sem-version"),
-		RtkVersion:          cmd.String("rtk-version"),
 	}
 }
 
@@ -82,26 +78,6 @@ func Command() *cli.Command {
 				Name:  "golangci-lint-version",
 				Usage: "golangci-lint version",
 				Value: DefaultGolangciLintVersion,
-			},
-			&cli.StringFlag{
-				Name:  "gotestsum-version",
-				Usage: "gotestsum version",
-				Value: DefaultGotestsumVersion,
-			},
-			&cli.StringFlag{
-				Name:  "moxide-version",
-				Usage: "markdown-oxide version",
-				Value: DefaultMoxideVersion,
-			},
-			&cli.StringFlag{
-				Name:  "sem-version",
-				Usage: "sem version",
-				Value: DefaultSemVersion,
-			},
-			&cli.StringFlag{
-				Name:  "rtk-version",
-				Usage: "rtk version",
-				Value: DefaultRtkVersion,
 			},
 		},
 		Action: Action,
