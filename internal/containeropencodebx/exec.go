@@ -24,12 +24,19 @@ func trimGlobalPrefix(path string) string {
 }
 
 // globalPatterns enumerates every embedded file shape under global/.
+// Skills, agents, commands, and plugins mirror into the kit's
+// files/home/.config/opencode/ subtree. The package.json / bun lockfile
+// patterns support plugins with npm dependencies: opencode runs
+// `bun install` when a package.json is present in ~/.config/opencode/.
 var globalPatterns = []string{
 	"global/skills/*/SKILL.md",
 	"global/agents/*.md",
 	"global/commands/*.md",
 	"global/plugins/*.ts",
 	"global/plugins/*.js",
+	"global/package.json",
+	"global/bun.lock",
+	"global/bun.lockb",
 }
 
 // globEmbedded matches a single pattern against the embedded FS.
