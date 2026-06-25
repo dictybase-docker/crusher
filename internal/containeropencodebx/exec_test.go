@@ -102,6 +102,35 @@ func TestGlobalFilePaths_ExcludesKnownDirectory(t *testing.T) {
 	assert.NotContains(t, paths, "global/agents")
 }
 
+func TestGlobalFilePaths_IncludesPackageJSON(t *testing.T) {
+	require := require.New(t)
+	either := globalFilePaths()()
+	require.True(E.IsRight(either))
+	paths := E.Fold(
+		func(error) []string { return nil },
+		F.Identity[[]string],
+	)(either)
+	require.Contains(paths, "global/package.json")
+}
+
+func TestWriteGlobalFiles_MirrorsPackageJSON(t *testing.T) {
+	require := require.New(t)
+	tmpDir := t.TempDir()
+	either := writeGlobalFiles(genState{tempDir: tmpDir})()
+	require.True(E.IsRight(either))
+
+	dest := filepath.Join(
+		tmpDir,
+		"files",
+		"home",
+		".config",
+		"opencode",
+		"package.json",
+	)
+	_, err := os.Stat(dest)
+	require.NoError(err, "package.json must be mirrored into the kit output tree")
+}
+
 func TestWriteOneGlobalFile_CreatesFileAtCorrectPath(t *testing.T) {
 	require := require.New(t)
 	kitDir := t.TempDir()

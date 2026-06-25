@@ -1,0 +1,7 @@
+{
+  "name": "opencode-sbx-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependency manifest for opencode plugins bundled into the sandbox kit",
+  "dependencies": {}
+}
