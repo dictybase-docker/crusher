@@ -20,15 +20,23 @@ func stdinReader(s string) io.Reader {
 	return F.Pipe2(
 		s,
 		O.FromPredicate(Str.IsNonEmpty),
-		O.Fold[string, io.Reader](
+		O.Fold(
 			F.Constant[io.Reader](nil),
 			func(v string) io.Reader { return strings.NewReader(v) },
 		),
 	)
 }
 
-// RunSbxCommand looks up the sbx binary then runs the command, optionally
-// piping Stdin. Returns Left on lookup failure or non-zero exit.
+// RunSbxCommand looks up the sbx binary then runs the command under
+// spec.Ctx, optionally piping Stdin. The context governs cancellation and
+// deadlines: when it is cancelled, the spawned process is killed.
+// Returns Left on lookup failure or non-zero exit.
+//
+// exec.CommandContext is used instead of a bare &exec.Cmd{} so that
+// spec.Ctx actually drives process lifetime. gosec rule G204 flags any
+// subprocess launched with non-constant arguments; here spec.Args is built
+// from validated CLI input inside this same process (never a raw shell
+// string), so the directive is a false positive and is suppressed locally.
 func RunSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
 	return F.Pipe2(
 		IOE.TryCatchError(func() (string, error) {
@@ -36,13 +44,11 @@ func RunSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
 		}),
 		IOE.Chain(func(bin string) IOE.IOEither[error, F.Void] {
 			return IOE.TryCatchError(func() (F.Void, error) {
-				cmd := &exec.Cmd{
-					Path:   bin,
-					Args:   append([]string{bin}, spec.Args...),
-					Stdin:  stdinReader(spec.Stdin),
-					Stdout: os.Stdout,
-					Stderr: os.Stderr,
-				}
+				//nolint:gosec // G204: args are validated, built in-process, no shell
+				cmd := exec.CommandContext(spec.Ctx, bin, spec.Args...)
+				cmd.Stdin = stdinReader(spec.Stdin)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
 
 				return F.VOID, cmd.Run()
 			})
