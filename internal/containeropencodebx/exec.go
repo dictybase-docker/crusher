@@ -18,26 +18,41 @@ import (
 	"github.com/dictybase-docker/crusher/internal/sbxexec"
 )
 
+var (
+	// globalPatterns enumerates every embedded file shape under global/.
+	// Skills, agents, commands, and plugins mirror into the kit's
+	// files/home/.config/opencode/ subtree. The package.json / bun lockfile
+	// patterns support plugins with npm dependencies: opencode runs
+	// `bun install` when a package.json is present in ~/.config/opencode/.
+	globalPatterns = []string{
+		"global/skills/*/SKILL.md",
+		"global/agents/*.md",
+		"global/commands/*.md",
+		"global/plugins/*.ts",
+		"global/plugins/*.js",
+		"global/package.json",
+		"global/bun.lock",
+		"global/bun.lockb",
+	}
+
+	// toOpencodeRoot chains home/.config/opencode under the kit root.
+	toOpencodeRoot = F.Flow4(
+		file.Join("files"),
+		file.Join("home"),
+		file.Join(".config"),
+		file.Join("opencode"),
+	)
+
+	// toStepState is a curried constructor converting execState to stepState.
+	toStepState = F.Curry2(func(run processRunner, es execState) stepState {
+		return stepState{State: es, Run: run}
+	})
+)
+
 // trimGlobalPrefix strips the leading "global/" segment from an embedded path
 // so it can be relocated under ~/.config/opencode/.
 func trimGlobalPrefix(path string) string {
 	return strings.TrimPrefix(path, "global/")
-}
-
-// globalPatterns enumerates every embedded file shape under global/.
-// Skills, agents, commands, and plugins mirror into the kit's
-// files/home/.config/opencode/ subtree. The package.json / bun lockfile
-// patterns support plugins with npm dependencies: opencode runs
-// `bun install` when a package.json is present in ~/.config/opencode/.
-var globalPatterns = []string{
-	"global/skills/*/SKILL.md",
-	"global/agents/*.md",
-	"global/commands/*.md",
-	"global/plugins/*.ts",
-	"global/plugins/*.js",
-	"global/package.json",
-	"global/bun.lock",
-	"global/bun.lockb",
 }
 
 // globEmbedded matches a single pattern against the embedded FS.
@@ -67,13 +82,6 @@ type globalFileWrite struct {
 	source  string
 	destAbs string
 }
-
-var toOpencodeRoot = F.Flow4(
-	file.Join("files"),
-	file.Join("home"),
-	file.Join(".config"),
-	file.Join("opencode"),
-)
 
 func toGlobalFileWrite(req P.Pair[string, string]) globalFileWrite {
 	return globalFileWrite{
@@ -293,11 +301,6 @@ func createWithSecret(ss stepState) IOE.IOEither[error, stepState] {
 		),
 	)
 }
-
-// toStepState is a curried constructor converting execState to stepState.
-var toStepState = F.Curry2(func(run processRunner, es execState) stepState {
-	return stepState{State: es, Run: run}
-})
 
 // Execute runs the full pipeline: generate → validate → pack → optionally
 // store secret + create.
