@@ -12,44 +12,44 @@ import (
 
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
+
+	"github.com/dictybase-docker/crusher/internal/sbxexec"
 )
 
-var (
-	// providerConfigs is the registry of all supported providers.
-	// Validated by ValidateInput via R.Lookup.
-	//
-	//nolint:gosec // env var names, not hardcoded credentials
-	providerConfigs = map[string]ProviderConfig{
-		providerOpenRouter: {
-			ServiceDomain:   domainOpenRouter,
-			ProviderDomain:  domainOpenRouter,
-			AuthHeader:      headerAuthorization,
-			AuthValueFormat: "Bearer %s",
-			APIKeyEnvVar:    "OPENROUTER_API_KEY",
-		},
-		providerAnthropic: {
-			ServiceDomain:   domainAnthropic,
-			ProviderDomain:  domainAnthropic,
-			AuthHeader:      "x-api-key",
-			AuthValueFormat: "%s",
-			APIKeyEnvVar:    "ANTHROPIC_API_KEY",
-		},
-		providerOpenAI: {
-			ServiceDomain:   domainOpenAI,
-			ProviderDomain:  domainOpenAI,
-			AuthHeader:      headerAuthorization,
-			AuthValueFormat: "Bearer %s",
-			APIKeyEnvVar:    "OPENAI_API_KEY",
-		},
-		providerGoogle: {
-			ServiceDomain:   domainGoogle,
-			ProviderDomain:  domainGoogle,
-			AuthHeader:      "x-goog-api-key",
-			AuthValueFormat: "%s",
-			APIKeyEnvVar:    "GOOGLE_API_KEY",
-		},
-	}
-)
+// providerConfigs is the registry of all supported providers.
+// Validated by ValidateInput via R.Lookup.
+//
+//nolint:gosec // env var names, not hardcoded credentials
+var providerConfigs = map[string]ProviderConfig{
+	providerOpenRouter: {
+		ServiceDomain:   domainOpenRouter,
+		ProviderDomain:  domainOpenRouter,
+		AuthHeader:      headerAuthorization,
+		AuthValueFormat: "Bearer %s",
+		APIKeyEnvVar:    "OPENROUTER_API_KEY",
+	},
+	providerAnthropic: {
+		ServiceDomain:   domainAnthropic,
+		ProviderDomain:  domainAnthropic,
+		AuthHeader:      "x-api-key",
+		AuthValueFormat: "%s",
+		APIKeyEnvVar:    "ANTHROPIC_API_KEY",
+	},
+	providerOpenAI: {
+		ServiceDomain:   domainOpenAI,
+		ProviderDomain:  domainOpenAI,
+		AuthHeader:      headerAuthorization,
+		AuthValueFormat: "Bearer %s",
+		APIKeyEnvVar:    "OPENAI_API_KEY",
+	},
+	providerGoogle: {
+		ServiceDomain:   domainGoogle,
+		ProviderDomain:  domainGoogle,
+		AuthHeader:      "x-goog-api-key",
+		AuthValueFormat: "%s",
+		APIKeyEnvVar:    "GOOGLE_API_KEY",
+	},
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -144,14 +144,6 @@ type KitResult struct {
 	Created    bool
 }
 
-// CommandSpec holds a resolved sbx CLI invocation.
-type CommandSpec struct {
-	Ctx   context.Context
-	Bin   string
-	Args  []string
-	Stdin string
-}
-
 // genState threads intermediate values through the generateToTempDir pipeline.
 // It has no configContent field because opencode config is an env var, not a file.
 type genState struct {
@@ -172,7 +164,7 @@ type execState struct {
 
 // processRunner is the type of the sbx subprocess executor.
 // Defined as a named type to enable injection of test doubles.
-type processRunner func(CommandSpec) IOE.IOEither[error, F.Void]
+type processRunner func(sbxexec.CommandSpec) IOE.IOEither[error, F.Void]
 
 // stepState pairs execState with its runner, making every pipeline step a
 // univariate function stepState → IOE[stepState].
