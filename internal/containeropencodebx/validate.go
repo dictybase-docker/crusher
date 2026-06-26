@@ -115,8 +115,9 @@ func validateAPIKey(input Input) E.Either[error, Input] {
 }
 
 func validateProvider(input Input) E.Either[error, Input] {
-	return F.Pipe2(
-		R.Lookup[ProviderConfig](input.Provider)(providerConfigs),
+	return F.Pipe3(
+		providerConfigs,
+		R.Lookup[ProviderConfig](input.Provider),
 		E.FromOption[ProviderConfig](func() error {
 			return fmt.Errorf(
 				"unsupported provider %q, valid values: openrouter, anthropic, openai, google",
