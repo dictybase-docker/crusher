@@ -42,11 +42,6 @@ var (
 		file.Join(".config"),
 		file.Join("opencode"),
 	)
-
-	// toStepState is a curried constructor converting execState to stepState.
-	toStepState = F.Curry2(func(run processRunner, es execState) stepState {
-		return stepState{State: es, Run: run}
-	})
 )
 
 // trimGlobalPrefix strips the leading "global/" segment from an embedded path
@@ -129,7 +124,7 @@ func writeGlobalFiles(gs genState) IOE.IOEither[error, genState] {
 		IOE.Chain(func(paths []string) IOE.IOEither[error, []F.Void] {
 			return F.Pipe3(
 				paths,
-				A.Zip[string, string](A.Replicate(len(paths), gs.tempDir)),
+				A.Zip[string](A.Replicate(len(paths), gs.tempDir)),
 				A.Map(toGlobalFileWrite),
 				IOE.TraverseArray(writeOneGlobalFile),
 			)
@@ -148,7 +143,11 @@ func makeTempDir(gs genState) IOE.IOEither[error, genState] {
 			return fmt.Errorf("failed to create temp dir: %w", err)
 		}),
 		IOE.Map[error](func(tempDir string) genState {
-			return genState{input: gs.input, spec: gs.spec, tempDir: tempDir}
+			return genState{
+				input:   gs.input,
+				spec:    gs.spec,
+				tempDir: tempDir,
+			}
 		}),
 	)
 }
@@ -199,21 +198,10 @@ func generateToTempDir(input Input) IOE.IOEither[error, execState] {
 	)
 }
 
-// runSbxCommand delegates to the shared sbxexec runner, adapting the local
-// CommandSpec type to the shared one.
-func runSbxCommand(spec CommandSpec) IOE.IOEither[error, F.Void] {
-	return sbxexec.RunSbxCommand(sbxexec.CommandSpec{
-		Ctx:   spec.Ctx,
-		Bin:   spec.Bin,
-		Args:  spec.Args,
-		Stdin: spec.Stdin,
-	})
-}
-
 // validateKit runs "sbx kit validate" against the temp dir.
 func validateKit(ss stepState) IOE.IOEither[error, stepState] {
 	return F.Pipe1(
-		ss.Run(CommandSpec{
+		ss.Run(sbxexec.CommandSpec{
 			Ctx:  ss.State.Ctx,
 			Bin:  sbxBinary,
 			Args: []string{"kit", "validate", ss.State.TempDir},
@@ -263,10 +251,16 @@ func markCreated(ss stepState) stepState {
 // packKit runs "sbx kit pack" to produce the output zip.
 func packKit(ss stepState) IOE.IOEither[error, stepState] {
 	return F.Pipe1(
-		ss.Run(CommandSpec{
-			Ctx:  ss.State.Ctx,
-			Bin:  sbxBinary,
-			Args: []string{"kit", "pack", ss.State.TempDir, "-o", ss.State.OutputPath},
+		ss.Run(sbxexec.CommandSpec{
+			Ctx: ss.State.Ctx,
+			Bin: sbxBinary,
+			Args: []string{
+				"kit",
+				"pack",
+				ss.State.TempDir,
+				"-o",
+				ss.State.OutputPath,
+			},
 		}),
 		IOE.Map[error](F.Constant1[F.Void](withPackedResult(ss))),
 	)
@@ -279,20 +273,32 @@ func createWithSecret(ss stepState) IOE.IOEither[error, stepState] {
 		ss.State.ShouldCreate,
 		O.FromPredicate(F.Identity[bool]),
 		O.Fold(
-			func() IOE.IOEither[error, stepState] { return IOE.Of[error](ss) },
+			func() IOE.IOEither[error, stepState] {
+				return IOE.Of[error](ss)
+			},
 			func(_ bool) IOE.IOEither[error, stepState] {
 				return F.Pipe2(
-					ss.Run(CommandSpec{
-						Ctx:   ss.State.Ctx,
-						Bin:   sbxBinary,
-						Args:  []string{"secret", "set", "-g", ss.State.Provider},
+					ss.Run(sbxexec.CommandSpec{
+						Ctx: ss.State.Ctx,
+						Bin: sbxBinary,
+						Args: []string{
+							"secret",
+							"set",
+							"-g",
+							ss.State.Provider,
+						},
 						Stdin: ss.State.APIKey + "\n",
 					}),
 					IOE.Chain(func(F.Void) IOE.IOEither[error, F.Void] {
-						return ss.Run(CommandSpec{
-							Ctx:  ss.State.Ctx,
-							Bin:  sbxBinary,
-							Args: []string{createCmd, agentKitName, "--kit", ss.State.OutputPath},
+						return ss.Run(sbxexec.CommandSpec{
+							Ctx: ss.State.Ctx,
+							Bin: sbxBinary,
+							Args: []string{
+								createCmd,
+								agentKitName,
+								"--kit",
+								ss.State.OutputPath,
+							},
 						})
 					}),
 					IOE.Map[error](F.Constant1[F.Void](markCreated(withPackedResult(ss)))),
@@ -308,7 +314,12 @@ func Execute(input Input) IOE.IOEither[error, KitResult] {
 	return F.Pipe6(
 		input,
 		generateToTempDir,
-		IOE.Map[error](toStepState(runSbxCommand)),
+		IOE.Map[error](func(es execState) stepState {
+			return stepState{
+				State: es,
+				Run:   sbxexec.RunSbxCommand,
+			}
+		}),
 		IOE.Chain(validateKit),
 		IOE.Chain(packKit),
 		IOE.Chain(createWithSecret),
