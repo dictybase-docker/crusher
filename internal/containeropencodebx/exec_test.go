@@ -13,15 +13,17 @@ import (
 	P "github.com/IBM/fp-go/v2/pair"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/dictybase-docker/crusher/internal/sbxexec"
 )
 
 const tempDirPath = "/tmp/opencode-sbx-test"
 
-func fakeSbxRunner(_ CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeSbxRunner(_ sbxexec.CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Of[error](F.VOID)
 }
 
-func fakeSbxRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
+func fakeSbxRunnerFail(_ sbxexec.CommandSpec) IOE.IOEither[error, F.Void] {
 	return IOE.Left[F.Void](errors.New("sbx command failed"))
 }
 
@@ -30,7 +32,7 @@ func fakeSbxRunnerFail(_ CommandSpec) IOE.IOEither[error, F.Void] {
 func fakeSbxRunnerFailOnSecond() processRunner {
 	calls := 0
 
-	return func(_ CommandSpec) IOE.IOEither[error, F.Void] {
+	return func(_ sbxexec.CommandSpec) IOE.IOEither[error, F.Void] {
 		calls++
 
 		return F.Pipe2(
@@ -49,8 +51,8 @@ func fakeSbxRunnerFailOnSecond() processRunner {
 }
 
 // capturingRunner records every CommandSpec it receives while succeeding.
-func capturingRunner(seen *[]CommandSpec) processRunner {
-	return func(spec CommandSpec) IOE.IOEither[error, F.Void] {
+func capturingRunner(seen *[]sbxexec.CommandSpec) processRunner {
+	return func(spec sbxexec.CommandSpec) IOE.IOEither[error, F.Void] {
 		*seen = append(*seen, spec)
 		return IOE.Of[error](F.VOID)
 	}
@@ -241,7 +243,7 @@ func TestCreateWithSecret_ShouldCreateFalse(t *testing.T) {
 func TestCreateWithSecret_UsesProviderAsSecretService(t *testing.T) {
 	require := require.New(t)
 
-	var seen []CommandSpec
+	var seen []sbxexec.CommandSpec
 
 	ss := stepState{
 		State: execState{
