@@ -132,8 +132,9 @@ func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
 // (not genState) because there is no configContent to thread — the config is
 // produced internally by buildSpecData.
 func GenerateSpec(input Input) IOE.IOEither[error, genState] {
-	return F.Pipe2(
-		buildSpecData(input),
+	return F.Pipe3(
+		input,
+		buildSpecData,
 		IOE.Chain(parseAndRenderTemplate),
 		IOE.Map[error](func(spec string) genState {
 			return genState{input: input, spec: spec}
