@@ -10,6 +10,7 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	O "github.com/IBM/fp-go/v2/option"
+	P "github.com/IBM/fp-go/v2/pair"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -134,7 +135,9 @@ func TestWriteGlobalFiles_MirrorsPackageJSON(t *testing.T) {
 func TestWriteOneGlobalFile_CreatesFileAtCorrectPath(t *testing.T) {
 	require := require.New(t)
 	kitDir := t.TempDir()
-	either := writeOneGlobalFile(kitDir)("global/skills/git-commit/SKILL.md")()
+	either := writeOneGlobalFile(
+		toGlobalFileWrite(P.MakePair("global/skills/git-commit/SKILL.md", kitDir)),
+	)()
 	require.True(E.IsRight(either))
 
 	dest := filepath.Join(
