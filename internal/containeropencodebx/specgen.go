@@ -32,86 +32,6 @@ type specTemplateData struct {
 	OpenCodeConfigContent string
 }
 
-// buildOpenCodeConfigContent marshals the sandbox-default opencode config to
-// compact JSON. Pure — no side-effects — so it stays in the Either layer.
-func buildOpenCodeConfigContent() E.Either[error, string] {
-	return F.Pipe1(
-		J.Marshal(openCodeConfig{
-			Autoupdate: false,
-			Permission: map[string]any{
-				"edit": "allow",
-				"bash": "allow",
-			},
-		}),
-		E.Map[error](func(b []byte) string { return string(b) }),
-	)
-}
-
-// withSpecProvider carries the resolved ProviderConfig through the staged
-// Either context assembled by E.Do/E.Bind.
-type withSpecProvider struct {
-	ProviderConfig
-}
-
-// withSpecConfig adds the rendered OPENCODE_CONFIG_CONTENT payload.
-type withSpecConfig struct {
-	withSpecProvider
-	OpenCodeConfigContent string
-}
-
-var setSpecProvider = F.Curry2(
-	func(pc ProviderConfig, _ struct{}) withSpecProvider {
-		return withSpecProvider{ProviderConfig: pc}
-	},
-)
-
-var setSpecConfig = F.Curry2(
-	func(content string, ctx withSpecProvider) withSpecConfig {
-		return withSpecConfig{
-			withSpecProvider:      ctx,
-			OpenCodeConfigContent: content,
-		}
-	},
-)
-
-// buildSpecData assembles the template data from input. The ProviderConfig
-// was already resolved during ValidateInput and is carried on
-// input.ResolvedProvider, so no second map lookup is needed here.
-// buildOpenCodeConfigContent is a pure Either operation, composed with
-// E.Do/E.Bind and lifted to IOEither at the boundary.
-func buildSpecData(input Input) IOE.IOEither[error, specTemplateData] {
-	return F.Pipe4(
-		E.Do[error](struct{}{}),
-		E.Bind(
-			setSpecProvider,
-			func(struct{}) E.Either[error, ProviderConfig] {
-				return E.Of[error](input.ResolvedProvider)
-			},
-		),
-		E.Bind(
-			setSpecConfig,
-			func(withSpecProvider) E.Either[error, string] {
-				return buildOpenCodeConfigContent()
-			},
-		),
-		E.Map[error](func(ctx withSpecConfig) specTemplateData {
-			return specTemplateData{
-				KitName:               input.KitName,
-				AgentImage:            input.AgentImage,
-				GolangciLintVersion:   input.GolangciLintVersion,
-				ProviderID:            input.Provider,
-				ServiceDomain:         ctx.ServiceDomain,
-				ProviderDomain:        ctx.ProviderDomain,
-				AuthHeader:            ctx.AuthHeader,
-				AuthValueFormat:       ctx.AuthValueFormat,
-				APIKeyEnvVar:          ctx.APIKeyEnvVar,
-				OpenCodeConfigContent: ctx.OpenCodeConfigContent,
-			}
-		}),
-		IOE.FromEither[error],
-	)
-}
-
 // parseAndRenderTemplate is a Kleisli arrow: specTemplateData → IOEither[error, string].
 func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
 	return F.Pipe2(
@@ -124,17 +44,41 @@ func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
 				return buf, tmpl.Execute(&buf, data)
 			})
 		}),
-		IOE.Map[error](func(buf bytes.Buffer) string { return buf.String() }),
+		IOE.Map[error](func(buf bytes.Buffer) string {
+			return buf.String()
+		}),
 	)
 }
 
-// GenerateSpec renders the spec template from input. Takes Input directly
-// (not genState) because there is no configContent to thread — the config is
-// produced internally by buildSpecData.
+// GenerateSpec renders the spec template from input. The ProviderConfig
+// was already resolved during ValidateInput and is carried on
+// input.ResolvedProvider, so the template data can be assembled inline.
 func GenerateSpec(input Input) IOE.IOEither[error, genState] {
-	return F.Pipe3(
-		input,
-		buildSpecData,
+	pc := input.ResolvedProvider
+
+	return F.Pipe4(
+		J.Marshal(openCodeConfig{
+			Autoupdate: false,
+			Permission: map[string]any{
+				"edit": "allow",
+				"bash": "allow",
+			},
+		}),
+		E.Map[error](func(b []byte) specTemplateData {
+			return specTemplateData{
+				KitName:               input.KitName,
+				AgentImage:            input.AgentImage,
+				GolangciLintVersion:   input.GolangciLintVersion,
+				ProviderID:            input.Provider,
+				ServiceDomain:         pc.ServiceDomain,
+				ProviderDomain:        pc.ProviderDomain,
+				AuthHeader:            pc.AuthHeader,
+				AuthValueFormat:       pc.AuthValueFormat,
+				APIKeyEnvVar:          pc.APIKeyEnvVar,
+				OpenCodeConfigContent: string(b),
+			}
+		}),
+		IOE.FromEither[error],
 		IOE.Chain(parseAndRenderTemplate),
 		IOE.Map[error](func(spec string) genState {
 			return genState{input: input, spec: spec}
