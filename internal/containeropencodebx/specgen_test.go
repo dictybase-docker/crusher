@@ -38,19 +38,14 @@ func TestLookupProvider_KnownProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			either := lookupProvider(c.name)
-			require.True(t, E.IsRight(either))
-			pc := E.Fold(
-				func(error) ProviderConfig { return ProviderConfig{} },
-				F.Identity[ProviderConfig],
-			)(either)
+			pc := providerConfigs[c.name]
 			assert.Equal(t, c.authHeader, pc.AuthHeader)
 		})
 	}
 }
 
 func TestLookupProvider_UnknownProvider(t *testing.T) {
-	either := lookupProvider("bogus")
+	either := ValidateInput(Input{APIKey: testAPIKey, Provider: "bogus"})
 	assert.True(t, E.IsLeft(either))
 }
 
@@ -60,6 +55,7 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 		AgentImage:          "custom/image:v1",
 		GolangciLintVersion: testGLVersion,
 		Provider:            providerAnthropic,
+		ResolvedProvider:    providerConfigs[providerAnthropic],
 	}
 	either := buildSpecData(input)()
 	require.True(t, E.IsRight(either))
@@ -90,6 +86,7 @@ func TestGenerateSpec_NoUnresolvedVars(t *testing.T) {
 				AgentImage:          DefaultAgentImage,
 				GolangciLintVersion: DefaultGolangciLintVersion,
 				Provider:            p,
+				ResolvedProvider:    providerConfigs[p],
 			}
 			either := GenerateSpec(input)()
 			require.True(t, E.IsRight(either))
@@ -119,6 +116,7 @@ func TestGenerateSpec_ContainsProviderDomain(t *testing.T) {
 				AgentImage:          DefaultAgentImage,
 				GolangciLintVersion: DefaultGolangciLintVersion,
 				Provider:            c.provider,
+				ResolvedProvider:    providerConfigs[c.provider],
 			}
 			either := GenerateSpec(input)()
 			require.True(t, E.IsRight(either))
@@ -137,6 +135,7 @@ func TestGenerateSpec_ContainsOpenCodeConfigContent(t *testing.T) {
 		AgentImage:          DefaultAgentImage,
 		GolangciLintVersion: DefaultGolangciLintVersion,
 		Provider:            providerOpenRouter,
+		ResolvedProvider:    providerConfigs[providerOpenRouter],
 	}
 	either := GenerateSpec(input)()
 	require.True(t, E.IsRight(either))
@@ -154,6 +153,7 @@ func TestGenerateSpec_ContainsKitName(t *testing.T) {
 		AgentImage:          DefaultAgentImage,
 		GolangciLintVersion: DefaultGolangciLintVersion,
 		Provider:            providerOpenRouter,
+		ResolvedProvider:    providerConfigs[providerOpenRouter],
 	}
 	either := GenerateSpec(input)()
 	require.True(t, E.IsRight(either))
