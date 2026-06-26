@@ -9,15 +9,17 @@ import (
 	S "github.com/IBM/fp-go/v2/string"
 )
 
+var (
+	// nameTag is a Semigroup that concatenates the name and tag with a ":" in
+	// between.
+	nameTag = S.IntersperseSemigroup(":")
+)
+
 const (
 	buildCmd                   = "build"
 	latestTag                  = "latest"
 	defaultGolangciLintVersion = "2.11.4"
 )
-
-// nameTag is a Semigroup that concatenates the name and tag with a ":" in
-// between.
-var nameTag = S.IntersperseSemigroup(":")
 
 // renderBuildArgs converts the BuildArgs map into an array of
 // "--build-arg" "KEY=VALUE" pairs using functional composition.

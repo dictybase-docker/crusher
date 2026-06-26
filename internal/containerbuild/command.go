@@ -15,18 +15,20 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// lookupResolver is a curried function that selects the Dockerfile resolver
-// from the Record by embed flag.
-var lookupResolver = F.Curry2(
-	func(embed bool, record map[bool]IOE.IOEither[error, DockerfileResource]) IOE.IOEither[error, DockerfileResource] {
-		return F.Pipe2(
-			record,
-			R.Lookup[IOE.IOEither[error, DockerfileResource]](embed),
-			O.GetOrElse(func() IOE.IOEither[error, DockerfileResource] {
-				return EmbeddedResolver()
-			}),
-		)
-	},
+var (
+	// lookupResolver is a curried function that selects the Dockerfile resolver
+	// from the Record by embed flag.
+	lookupResolver = F.Curry2(
+		func(embed bool, record map[bool]IOE.IOEither[error, DockerfileResource]) IOE.IOEither[error, DockerfileResource] {
+			return F.Pipe2(
+				record,
+				R.Lookup[IOE.IOEither[error, DockerfileResource]](embed),
+				O.GetOrElse(func() IOE.IOEither[error, DockerfileResource] {
+					return EmbeddedResolver()
+				}),
+			)
+		},
+	)
 )
 
 // resolverEntries builds a Record of the two Dockerfile resolver strategies

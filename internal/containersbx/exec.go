@@ -16,6 +16,14 @@ import (
 	Str "github.com/IBM/fp-go/v2/string"
 )
 
+var (
+	// skillsAbsPathL is a lens for the SkillsAbsPath field in Input.
+	skillsAbsPathL = L.MakeLens(
+		func(i Input) string { return i.SkillsAbsPath },
+		func(i Input, s string) Input { i.SkillsAbsPath = s; return i },
+	)
+)
+
 // processRunner is a type alias for an sbx subprocess runner, enabling injection
 // of test doubles.
 type processRunner func(spec CommandSpec) IOE.IOEither[error, F.Void]
@@ -79,12 +87,6 @@ type genState struct {
 	spec          string // set by GenerateSpec
 	tempDir       string // set by makeTempDirWithSpec
 }
-
-// skillsAbsPathL is a lens for the SkillsAbsPath field in Input.
-var skillsAbsPathL = L.MakeLens(
-	func(i Input) string { return i.SkillsAbsPath },
-	func(i Input, s string) Input { i.SkillsAbsPath = s; return i },
-)
 
 // resolveSkillsPath resolves input.SkillsPath to an absolute path if non-empty.
 func resolveSkillsPath(input Input) IOE.IOEither[error, Input] {

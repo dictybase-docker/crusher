@@ -9,6 +9,14 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 )
 
+var (
+	// releaseResource is the Kleisli arrow passed to ioeither.WithResource as the
+	// release callback.
+	releaseResource = func(res DockerfileResource) IOE.IOEither[error, string] {
+		return res.Release
+	}
+)
+
 // processRunner is a type alias for a subprocess runner, enabling injection
 // of test doubles.
 type processRunner func(spec CommandSpec) IOE.IOEither[error, F.Void]
@@ -26,12 +34,6 @@ func executeWith(run processRunner, r Input) IOE.IOEither[error, F.Void] {
 		useResource(run, r),
 		IOE.WithResource[F.Void](r.DockerfileSource, releaseResource),
 	)
-}
-
-// releaseResource is the Kleisli arrow passed to ioeither.WithResource as the
-// release callback.
-var releaseResource = func(res DockerfileResource) IOE.IOEither[error, string] {
-	return res.Release
 }
 
 // useResource builds the use Kleisli arrow for ioeither.WithResource.
