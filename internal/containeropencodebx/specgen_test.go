@@ -1,7 +1,6 @@
 package containeropencodebx
 
 import (
-	"encoding/json"
 	"testing"
 
 	E "github.com/IBM/fp-go/v2/either"
@@ -9,22 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestBuildOpenCodeConfigContent_Valid(t *testing.T) {
-	either := buildOpenCodeConfigContent()
-	require.True(t, E.IsRight(either))
-
-	content := E.Fold(
-		func(error) string { return "" },
-		F.Identity[string],
-	)(either)
-
-	var cfg openCodeConfig
-	require.NoError(t, json.Unmarshal([]byte(content), &cfg))
-	assert.False(t, cfg.Autoupdate)
-	assert.Equal(t, "allow", cfg.Permission["edit"])
-	assert.Equal(t, "allow", cfg.Permission["bash"])
-}
 
 func TestLookupProvider_KnownProvider(t *testing.T) {
 	cases := []struct {
@@ -49,7 +32,7 @@ func TestLookupProvider_UnknownProvider(t *testing.T) {
 	assert.True(t, E.IsLeft(either))
 }
 
-func TestBuildSpecData_FieldMapping(t *testing.T) {
+func TestGenerateSpec_ContainsResolvedProviderFields(t *testing.T) {
 	input := Input{
 		KitName:             testKitName,
 		AgentImage:          "custom/image:v1",
@@ -57,24 +40,18 @@ func TestBuildSpecData_FieldMapping(t *testing.T) {
 		Provider:            providerAnthropic,
 		ResolvedProvider:    providerConfigs[providerAnthropic],
 	}
-	either := buildSpecData(input)()
+	either := GenerateSpec(input)()
 	require.True(t, E.IsRight(either))
 
-	data := E.Fold(
-		func(error) specTemplateData { return specTemplateData{} },
-		F.Identity[specTemplateData],
+	gs := E.Fold(
+		func(error) genState { return genState{} },
+		F.Identity[genState],
 	)(either)
 
-	require.Equal(t, testKitName, data.KitName)
-	require.Equal(t, "custom/image:v1", data.AgentImage)
-	require.Equal(t, providerAnthropic, data.ProviderID)
-	require.Equal(t, domainAnthropic, data.ServiceDomain)
-	require.Equal(t, "x-api-key", data.AuthHeader)
-	require.Equal(t, "ANTHROPIC_API_KEY", data.APIKeyEnvVar)
-
-	var cfg openCodeConfig
-	require.NoError(t, json.Unmarshal([]byte(data.OpenCodeConfigContent), &cfg))
-	assert.False(t, cfg.Autoupdate)
+	assert.Contains(t, gs.spec, `image: "custom/image:v1"`)
+	assert.Contains(t, gs.spec, domainAnthropic+`: anthropic`)
+	assert.Contains(t, gs.spec, `headerName: x-api-key`)
+	assert.Contains(t, gs.spec, `- ANTHROPIC_API_KEY`)
 }
 
 func TestGenerateSpec_NoUnresolvedVars(t *testing.T) {
@@ -145,6 +122,8 @@ func TestGenerateSpec_ContainsOpenCodeConfigContent(t *testing.T) {
 	)(either)
 	assert.Contains(t, gs.spec, "OPENCODE_CONFIG_CONTENT:")
 	assert.Contains(t, gs.spec, `"autoupdate":false`)
+	assert.Contains(t, gs.spec, `"edit":"allow"`)
+	assert.Contains(t, gs.spec, `"bash":"allow"`)
 }
 
 func TestGenerateSpec_ContainsKitName(t *testing.T) {
