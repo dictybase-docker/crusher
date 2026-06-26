@@ -68,20 +68,20 @@ type globalFileWrite struct {
 	destAbs string
 }
 
+var toOpencodeRoot = F.Flow4(
+	file.Join("files"),
+	file.Join("home"),
+	file.Join(".config"),
+	file.Join("opencode"),
+)
+
 func toGlobalFileWrite(req P.Pair[string, string]) globalFileWrite {
 	return globalFileWrite{
 		source: P.Head(req),
-		destAbs: F.Pipe1(
+		destAbs: F.Pipe2(
 			P.Tail(req),
-			file.Join(
-				filepath.Join(
-					"files",
-					"home",
-					".config",
-					"opencode",
-					trimGlobalPrefix(P.Head(req)),
-				),
-			),
+			toOpencodeRoot,
+			file.Join(trimGlobalPrefix(P.Head(req))),
 		),
 	}
 }
@@ -99,7 +99,14 @@ func writeOneGlobalFile(req globalFileWrite) IOE.IOEither[error, F.Void] {
 		IOE.Chain(func(content []byte) IOE.IOEither[error, []byte] {
 			return F.Pipe1(
 				FILE.MkdirAll(filepath.Dir(req.destAbs), dirPerm),
-				IOE.ChainTo[string](F.Pipe1(content, FILE.WriteFile(req.destAbs, filePerm))),
+				IOE.ChainTo[string](
+					F.Pipe1(content,
+						FILE.WriteFile(
+							req.destAbs,
+							filePerm,
+						),
+					),
+				),
 			)
 		}),
 		IOE.Map[error](F.Constant1[[]byte](F.VOID)),
