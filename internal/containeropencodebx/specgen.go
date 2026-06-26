@@ -56,14 +56,15 @@ func parseAndRenderTemplate(data specTemplateData) IOE.IOEither[error, string] {
 func GenerateSpec(input Input) IOE.IOEither[error, genState] {
 	pc := input.ResolvedProvider
 
-	return F.Pipe4(
-		J.Marshal(openCodeConfig{
+	return F.Pipe5(
+		openCodeConfig{
 			Autoupdate: false,
 			Permission: map[string]any{
 				"edit": "allow",
 				"bash": "allow",
 			},
-		}),
+		},
+		J.Marshal,
 		E.Map[error](func(b []byte) specTemplateData {
 			return specTemplateData{
 				KitName:               input.KitName,
