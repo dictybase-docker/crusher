@@ -2,14 +2,12 @@ package containeropencodebx
 
 import (
 	"bytes"
-	"fmt"
 	"text/template"
 
 	E "github.com/IBM/fp-go/v2/either"
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	J "github.com/IBM/fp-go/v2/json"
-	R "github.com/IBM/fp-go/v2/record"
 )
 
 // openCodeConfig is the JSON payload injected via OPENCODE_CONFIG_CONTENT.
@@ -49,16 +47,6 @@ func buildOpenCodeConfigContent() E.Either[error, string] {
 	)
 }
 
-// lookupProvider resolves a provider key against providerConfigs. Pure lookup.
-func lookupProvider(provider string) E.Either[error, ProviderConfig] {
-	return F.Pipe1(
-		R.Lookup[ProviderConfig](provider)(providerConfigs),
-		E.FromOption[ProviderConfig](func() error {
-			return fmt.Errorf("unsupported provider %q", provider)
-		}),
-	)
-}
-
 // withSpecProvider carries the resolved ProviderConfig through the staged
 // Either context assembled by E.Do/E.Bind.
 type withSpecProvider struct {
@@ -86,8 +74,10 @@ var setSpecConfig = F.Curry2(
 	},
 )
 
-// buildSpecData assembles the template data from input. Both lookupProvider
-// and buildOpenCodeConfigContent are pure Either operations, composed here with
+// buildSpecData assembles the template data from input. The ProviderConfig
+// was already resolved during ValidateInput and is carried on
+// input.ResolvedProvider, so no second map lookup is needed here.
+// buildOpenCodeConfigContent is a pure Either operation, composed with
 // E.Do/E.Bind and lifted to IOEither at the boundary.
 func buildSpecData(input Input) IOE.IOEither[error, specTemplateData] {
 	return F.Pipe4(
@@ -95,7 +85,7 @@ func buildSpecData(input Input) IOE.IOEither[error, specTemplateData] {
 		E.Bind(
 			setSpecProvider,
 			func(struct{}) E.Either[error, ProviderConfig] {
-				return lookupProvider(input.Provider)
+				return E.Of[error](input.ResolvedProvider)
 			},
 		),
 		E.Bind(

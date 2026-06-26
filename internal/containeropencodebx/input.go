@@ -121,11 +121,14 @@ var providerConfigs = map[string]ProviderConfig{
 }
 
 // Input holds the raw CLI arguments before normalization or validation.
+// The ResolvedProvider field is populated by validateProvider so downstream
+// pipeline steps (spec generation) never need to re-lookup the provider.
 type Input struct {
 	OutputPath          string
 	KitName             string
 	APIKey              string
-	Provider            string // "openrouter" | "anthropic" | "openai" | "google"
+	Provider            string         // "openrouter" | "anthropic" | "openai" | "google"
+	ResolvedProvider    ProviderConfig // set by validateProvider
 	ShouldCreate        bool
 	AgentImage          string
 	GolangciLintVersion string

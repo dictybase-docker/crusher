@@ -63,9 +63,10 @@ func generateKitName(n int) I.IO[string] {
 // NormalizeInput fills default values for blank fields.
 func NormalizeInput(input Input) Input {
 	return Input{
-		APIKey:       input.APIKey,
-		ShouldCreate: input.ShouldCreate,
-		Ctx:          input.Ctx,
+		APIKey:           input.APIKey,
+		ResolvedProvider: input.ResolvedProvider,
+		ShouldCreate:     input.ShouldCreate,
+		Ctx:              input.Ctx,
 		OutputPath: F.Pipe2(
 			input.OutputPath,
 			O.FromPredicate(isNonBlank),
@@ -124,7 +125,19 @@ func validateProvider(input Input) E.Either[error, Input] {
 				input.Provider,
 			)
 		}),
-		E.MapTo[error, ProviderConfig](input),
+		E.Map[error](func(pc ProviderConfig) Input {
+			return Input{
+				OutputPath:          input.OutputPath,
+				KitName:             input.KitName,
+				APIKey:              input.APIKey,
+				Provider:            input.Provider,
+				ResolvedProvider:    pc,
+				ShouldCreate:        input.ShouldCreate,
+				AgentImage:          input.AgentImage,
+				GolangciLintVersion: input.GolangciLintVersion,
+				Ctx:                 input.Ctx,
+			}
+		}),
 	)
 }
 
