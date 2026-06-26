@@ -13,6 +13,7 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
+	P "github.com/IBM/fp-go/v2/pair"
 
 	"github.com/dictybase-docker/crusher/internal/sbxexec"
 )
@@ -55,39 +56,54 @@ func globEmbedded(pattern string) IOE.IOEither[error, []string] {
 func globalFilePaths() IOE.IOEither[error, []string] {
 	return F.Pipe2(
 		globalPatterns,
-		IOE.TraverseArray[error](globEmbedded),
+		IOE.TraverseArray(globEmbedded),
 		IOE.Map[error](func(paths [][]string) []string {
 			return A.Flatten(paths)
 		}),
 	)
 }
 
-// writeOneGlobalFile returns a Kleisli arrow that reads one embedded global
-// file and writes it into the kit's files/home/.config/opencode/ subtree.
-func writeOneGlobalFile(kitDir string) func(string) IOE.IOEither[error, []byte] {
-	return func(globalPath string) IOE.IOEither[error, []byte] {
-		destAbs := F.Pipe1(
-			kitDir,
-			file.Join(
-				filepath.Join("files", "home", ".config", "opencode", trimGlobalPrefix(globalPath)),
-			),
-		)
+type globalFileWrite struct {
+	source  string
+	destAbs string
+}
 
-		return F.Pipe2(
-			IOE.TryCatchError(func() ([]byte, error) {
-				return fs.ReadFile(globalFS, globalPath)
-			}),
-			IOE.MapLeft[[]byte](func(err error) error {
-				return fmt.Errorf("read embedded %s: %w", globalPath, err)
-			}),
-			IOE.Chain(func(content []byte) IOE.IOEither[error, []byte] {
-				return F.Pipe1(
-					FILE.MkdirAll(filepath.Dir(destAbs), dirPerm),
-					IOE.ChainTo[string](F.Pipe1(content, FILE.WriteFile(destAbs, filePerm))),
-				)
-			}),
-		)
+func toGlobalFileWrite(req P.Pair[string, string]) globalFileWrite {
+	return globalFileWrite{
+		source: P.Head(req),
+		destAbs: F.Pipe1(
+			P.Tail(req),
+			file.Join(
+				filepath.Join(
+					"files",
+					"home",
+					".config",
+					"opencode",
+					trimGlobalPrefix(P.Head(req)),
+				),
+			),
+		),
 	}
+}
+
+// writeOneGlobalFile reads one embedded global file and writes it into the
+// kit's files/home/.config/opencode/ subtree.
+func writeOneGlobalFile(req globalFileWrite) IOE.IOEither[error, F.Void] {
+	return F.Pipe3(
+		IOE.TryCatchError(func() ([]byte, error) {
+			return fs.ReadFile(globalFS, req.source)
+		}),
+		IOE.MapLeft[[]byte](func(err error) error {
+			return fmt.Errorf("read embedded %s: %w", req.source, err)
+		}),
+		IOE.Chain(func(content []byte) IOE.IOEither[error, []byte] {
+			return F.Pipe1(
+				FILE.MkdirAll(filepath.Dir(req.destAbs), dirPerm),
+				IOE.ChainTo[string](F.Pipe1(content, FILE.WriteFile(req.destAbs, filePerm))),
+			)
+		}),
+		IOE.Map[error](F.Constant1[[]byte](F.VOID)),
+	)
 }
 
 // writeGlobalFiles mirrors every embedded global file into the kit temp dir,
@@ -95,8 +111,15 @@ func writeOneGlobalFile(kitDir string) func(string) IOE.IOEither[error, []byte] 
 func writeGlobalFiles(gs genState) IOE.IOEither[error, genState] {
 	return F.Pipe2(
 		globalFilePaths(),
-		IOE.Chain(IOE.TraverseArray[error](writeOneGlobalFile(gs.tempDir))),
-		IOE.Map[error](F.Constant1[[][]byte](gs)),
+		IOE.Chain(func(paths []string) IOE.IOEither[error, []F.Void] {
+			return F.Pipe3(
+				paths,
+				A.Zip[string, string](A.Replicate(len(paths), gs.tempDir)),
+				A.Map(toGlobalFileWrite),
+				IOE.TraverseArray(writeOneGlobalFile),
+			)
+		}),
+		IOE.Map[error](F.Constant1[[]F.Void](gs)),
 	)
 }
 
@@ -119,7 +142,10 @@ func makeTempDir(gs genState) IOE.IOEither[error, genState] {
 func writeSpecFile(gs genState) IOE.IOEither[error, genState] {
 	return F.Pipe2(
 		[]byte(gs.spec),
-		FILE.WriteFile(F.Pipe1(gs.tempDir, file.Join("spec.yaml")), filePerm),
+		FILE.WriteFile(
+			F.Pipe1(gs.tempDir, file.Join("spec.yaml")),
+			filePerm,
+		),
 		IOE.Map[error](F.Constant1[[]byte](gs)),
 	)
 }
