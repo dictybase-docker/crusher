@@ -1,5 +1,5 @@
-github.com/IBM/fp-go/v2 v2.3.60 h1:hU/Mrfd1Mct9yZJ6UCCrJ/876qO/BcqKoqAEoVN1IwY=
-github.com/IBM/fp-go/v2 v2.3.60/go.mod h1:2057qRXnwZ4l3GoYl78iq9BkFlr93Tr3wkKU0oBRmGM=
+github.com/IBM/fp-go/v2 v2.3.66 h1:M87Cr34a5IQB4roWgvuFbY+qkt6fVX/uLsaONqX/1eg=
+github.com/IBM/fp-go/v2 v2.3.66/go.mod h1:2057qRXnwZ4l3GoYl78iq9BkFlr93Tr3wkKU0oBRmGM=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gookit/assert v0.1.1 h1:lh3GcawXe/p+cU7ESTZ5Ui3Sm/x8JWpIis4/1aF0mY0=

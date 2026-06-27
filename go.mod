@@ -3,7 +3,7 @@ module github.com/dictybase-docker/crusher
 go 1.26
 
 require (
-	github.com/IBM/fp-go/v2 v2.3.60
+	github.com/IBM/fp-go/v2 v2.3.66
 	github.com/gookit/color v1.6.1
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v3 v3.10.0
