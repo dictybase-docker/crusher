@@ -124,7 +124,7 @@ func printResult(r KitResult) F.Void {
 	F.Pipe2(
 		r.Created,
 		O.FromPredicate(F.Identity[bool]),
-		O.Fold[bool, any](
+		O.Fold(
 			func() any {
 				color.Println()
 				nord8.Print("To run:  ")
