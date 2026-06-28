@@ -16,12 +16,10 @@ import (
 	Str "github.com/IBM/fp-go/v2/string"
 )
 
-var (
-	// skillsAbsPathL is a lens for the SkillsAbsPath field in Input.
-	skillsAbsPathL = L.MakeLens(
-		func(i Input) string { return i.SkillsAbsPath },
-		func(i Input, s string) Input { i.SkillsAbsPath = s; return i },
-	)
+// skillsAbsPathL is a lens for the SkillsAbsPath field in Input.
+var skillsAbsPathL = L.MakeLens(
+	func(i Input) string { return i.SkillsAbsPath },
+	func(i Input, s string) Input { i.SkillsAbsPath = s; return i },
 )
 
 // processRunner is a type alias for an sbx subprocess runner, enabling injection
