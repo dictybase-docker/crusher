@@ -211,41 +211,19 @@ func validateKit(ss stepState) IOE.IOEither[error, stepState] {
 }
 
 // withPackedResult returns a new stepState with the packed kit result recorded.
+// Sets Result.OutputPath from the state and Result.KitName to the agent kit
+// name; every other field is carried by the lens's value copy.
 func withPackedResult(ss stepState) stepState {
-	return stepState{
-		Run: ss.Run,
-		State: execState{
-			Input:      ss.State.Input,
-			TempDir:    ss.State.TempDir,
-			OutputPath: ss.State.OutputPath,
-			KitName:    ss.State.KitName,
-			APIKey:     ss.State.APIKey,
-			Result: KitResult{
-				OutputPath: ss.State.OutputPath,
-				KitName:    agentKitName,
-				Created:    ss.State.Result.Created,
-			},
-		},
-	}
+	return F.Pipe2(
+		ss,
+		ssResultOutputPath.Set(ss.State.OutputPath),
+		ssResultKitName.Set(agentKitName),
+	)
 }
 
 // markCreated returns a new stepState with Result.Created set true.
 func markCreated(ss stepState) stepState {
-	return stepState{
-		Run: ss.Run,
-		State: execState{
-			Input:      ss.State.Input,
-			TempDir:    ss.State.TempDir,
-			OutputPath: ss.State.OutputPath,
-			KitName:    ss.State.KitName,
-			APIKey:     ss.State.APIKey,
-			Result: KitResult{
-				OutputPath: ss.State.Result.OutputPath,
-				KitName:    ss.State.Result.KitName,
-				Created:    true,
-			},
-		},
-	}
+	return ssResultCreated.Set(true)(ss)
 }
 
 // packKit runs "sbx kit pack" to produce the output zip.
