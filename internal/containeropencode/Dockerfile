@@ -40,6 +40,7 @@ ARG GOTESTSUM_VERSION=latest
 ARG MOXIDE_VERSION=latest
 ARG SEM_VERSION=latest
 ARG RTK_VERSION=latest
+ARG GREPAI_VERSION=latest
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep fd-find wget ca-certificates gh && \
@@ -97,6 +98,22 @@ RUN set -eux; \
     install_github_binary "Feel-ix-343/markdown-oxide" "${MOXIDE_VERSION}" \
         "markdown-oxide-{VER}-{ARCH}" markdown-oxide v0.25.10 \
         x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
+
+RUN set -eux; \
+    GREPAI_VER="${GREPAI_VERSION}"; \
+    if [ "${GREPAI_VER}" = "latest" ]; then \
+        GREPAI_VER="$(wget -qO- "https://api.github.com/repos/yoanbernabeu/grepai/releases/latest" | awk -F\" '/tag_name/ {print $4; exit}')"; \
+        [ -z "${GREPAI_VER}" ] && GREPAI_VER="v0.35.0"; \
+    fi; \
+    [ "${GREPAI_VER#v}" = "${GREPAI_VER}" ] && GREPAI_VER="v${GREPAI_VER}"; \
+    case "$(dpkg --print-architecture)" in \
+        amd64) ARCH="amd64" ;; \
+        arm64) ARCH="arm64" ;; \
+        *) echo "unsupported architecture" >&2; exit 1 ;; \
+    esac; \
+    ASSET="grepai_${GREPAI_VER#v}_linux_${ARCH}.tar.gz"; \
+    wget -q "https://github.com/yoanbernabeu/grepai/releases/download/${GREPAI_VER}/${ASSET}" -O "/tmp/${ASSET}"; \
+    tar -xzf "/tmp/${ASSET}" -C /tmp && install -m 0755 /tmp/grepai /usr/local/bin/grepai && rm -f "/tmp/${ASSET}" /tmp/grepai
 
 COPY --from=sem-builder /build/crates/target/release/sem /usr/local/bin/sem
 COPY --from=sem-builder /build/crates/target/release/sem-mcp /usr/local/bin/sem-mcp
