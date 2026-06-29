@@ -126,6 +126,25 @@ func TestGenerateSpec_ContainsOpenCodeConfigContent(t *testing.T) {
 	assert.Contains(t, gs.spec, `"bash":"allow"`)
 }
 
+func TestGenerateSpec_ContainsGrepAI(t *testing.T) {
+	input := Input{
+		KitName:             testKitName,
+		AgentImage:          DefaultAgentImage,
+		GolangciLintVersion: DefaultGolangciLintVersion,
+		Provider:            providerOpenRouter,
+		ResolvedProvider:    providerConfigs[providerOpenRouter],
+	}
+	either := GenerateSpec(input)()
+	require.True(t, E.IsRight(either))
+	gs := E.Fold(
+		func(error) genState { return genState{} },
+		F.Identity[genState],
+	)(either)
+	assert.Contains(t, gs.spec, "`grepai`")
+	assert.NotContains(t, gs.spec, "GREP_API_KEY")
+	assert.NotContains(t, gs.spec, "api.grep.ai")
+}
+
 func TestGenerateSpec_ContainsKitName(t *testing.T) {
 	input := Input{
 		KitName:             "display-name-test",
