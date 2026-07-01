@@ -82,3 +82,15 @@ func Intersect[E any](eq EQ.Eq[E]) func(other []E) func(current []E) []E {
 		)
 	}
 }
+
+// Difference returns the set difference of two slices: the elements of
+// current that are not members (per eq) of other.
+func Difference[E any](eq EQ.Eq[E]) func(other []E) func(current []E) []E {
+	return func(other []E) func(current []E) []E {
+		return F.Pipe2(
+			other,
+			F.Flip(NotMemberOf(eq)),
+			A.Filter[E],
+		)
+	}
+}

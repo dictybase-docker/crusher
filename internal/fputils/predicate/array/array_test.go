@@ -42,3 +42,14 @@ func TestIntersect_string(t *testing.T) {
 	assert.Empty(t, Intersect(predord.StringEq)(nil)(requested))
 	assert.Empty(t, Intersect(predord.StringEq)(knownSkills)(nil))
 }
+
+func TestDifference_string(t *testing.T) {
+	knownSkills := []string{"fp-go", "fp-go-http", "fp-go-lens"}
+	requested := []string{"fp-go-http", "fp-go-lens", "fp-go-pr-review"}
+
+	got := Difference(predord.StringEq)(knownSkills)(requested)
+
+	assert.Equal(t, []string{"fp-go-pr-review"}, got)
+	assert.Equal(t, requested, Difference(predord.StringEq)(nil)(requested))
+	assert.Empty(t, Difference(predord.StringEq)(knownSkills)(nil))
+}
