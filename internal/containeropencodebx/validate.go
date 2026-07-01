@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 
 	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
@@ -16,23 +15,16 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
-	Pred "github.com/IBM/fp-go/v2/predicate"
 	R "github.com/IBM/fp-go/v2/record"
 	Str "github.com/IBM/fp-go/v2/string"
 
 	FP "github.com/dictybase-docker/crusher/internal/fp"
+	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var (
-	isBlank = F.Pipe1(
-		Str.IsEmpty,
-		Pred.ContraMap(strings.TrimSpace),
-	)
-
-	isNonBlank = Pred.Not(isBlank)
-
 	randAlpha = func() int {
 		return F.Pipe2(alphabet, Str.Size, rand.Intn)
 	}
@@ -69,27 +61,27 @@ func NormalizeInput(input Input) Input {
 		Ctx:              input.Ctx,
 		OutputPath: F.Pipe2(
 			input.OutputPath,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return DefaultOutputPath }),
 		),
 		KitName: F.Pipe2(
 			input.KitName,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(generateKitName(charNo)),
 		),
 		AgentImage: F.Pipe2(
 			input.AgentImage,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return DefaultAgentImage }),
 		),
 		Provider: F.Pipe2(
 			input.Provider,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return DefaultProvider }),
 		),
 		GolangciLintVersion: F.Pipe2(
 			input.GolangciLintVersion,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return DefaultGolangciLintVersion }),
 		),
 	}
