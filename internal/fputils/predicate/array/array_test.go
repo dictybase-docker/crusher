@@ -8,6 +8,12 @@ import (
 	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
+const (
+	fpGoHTTP     = "fp-go-http"
+	fpGoLens     = "fp-go-lens"
+	fpGoPRReview = "fp-go-pr-review"
+)
+
 func TestMemberOf_string(t *testing.T) {
 	allowedTags := []string{"latest", "stable", "nightly"}
 	isAllowedTag := MemberOf(predord.StringEq)
@@ -33,23 +39,23 @@ func TestNotMemberOf_string(t *testing.T) {
 }
 
 func TestIntersect_string(t *testing.T) {
-	knownSkills := []string{"fp-go", "fp-go-http", "fp-go-lens"}
-	requested := []string{"fp-go-http", "fp-go-lens", "fp-go-pr-review"}
+	knownSkills := []string{"fp-go", fpGoHTTP, fpGoLens}
+	requested := []string{fpGoHTTP, fpGoLens, fpGoPRReview}
 
 	got := Intersect(predord.StringEq)(knownSkills)(requested)
 
-	assert.Equal(t, []string{"fp-go-http", "fp-go-lens"}, got)
+	assert.Equal(t, []string{fpGoHTTP, fpGoLens}, got)
 	assert.Empty(t, Intersect(predord.StringEq)(nil)(requested))
 	assert.Empty(t, Intersect(predord.StringEq)(knownSkills)(nil))
 }
 
 func TestDifference_string(t *testing.T) {
-	knownSkills := []string{"fp-go", "fp-go-http", "fp-go-lens"}
-	requested := []string{"fp-go-http", "fp-go-lens", "fp-go-pr-review"}
+	knownSkills := []string{"fp-go", fpGoHTTP, fpGoLens}
+	requested := []string{fpGoHTTP, fpGoLens, fpGoPRReview}
 
 	got := Difference(predord.StringEq)(knownSkills)(requested)
 
-	assert.Equal(t, []string{"fp-go-pr-review"}, got)
+	assert.Equal(t, []string{fpGoPRReview}, got)
 	assert.Equal(t, requested, Difference(predord.StringEq)(nil)(requested))
 	assert.Empty(t, Difference(predord.StringEq)(knownSkills)(nil))
 }
