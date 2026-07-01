@@ -11,13 +11,11 @@ import (
 	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
-var (
-	// A tag list is valid when it has at least one item and none of them
-	// are blank after trimming whitespace.
-	isAllNonBlank = F.Pipe1(
-		A.IsNonEmpty[string],
-		P.And(P.Not(A.Any(predord.IsBlank))),
-	)
+// A tag list is valid when it has at least one item and none of them
+// are blank after trimming whitespace.
+var isAllNonBlank = F.Pipe1(
+	A.IsNonEmpty[string],
+	P.And(P.Not(A.Any(predord.IsBlank))),
 )
 
 // ValidateInput checks that the tags in the Input are valid according to
