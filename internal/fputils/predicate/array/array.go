@@ -63,3 +63,10 @@ func MemberOf[E any](eq EQ.Eq[E]) func(value E) Pred.Predicate[[]E] {
 		return A.Any(EQ.Equals(eq)(value))
 	}
 }
+
+// NotMemberOf returns the negation of MemberOf.
+func NotMemberOf[E any](eq EQ.Eq[E]) func(value E) Pred.Predicate[[]E] {
+	return func(value E) Pred.Predicate[[]E] {
+		return F.Pipe1(MemberOf(eq)(value), Pred.Not)
+	}
+}

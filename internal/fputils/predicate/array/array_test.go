@@ -19,3 +19,15 @@ func TestMemberOf_string(t *testing.T) {
 	assert.False(t, isAllowedTag("latest")(nil))
 	assert.False(t, isAllowedTag("latest")([]string{}))
 }
+
+func TestNotMemberOf_string(t *testing.T) {
+	allowedTags := []string{"latest", "stable", "nightly"}
+	isNotAllowedTag := NotMemberOf(predord.StringEq)
+
+	assert.False(t, isNotAllowedTag("stable")(allowedTags))
+	assert.False(t, isNotAllowedTag("latest")(allowedTags))
+	assert.True(t, isNotAllowedTag("beta")(allowedTags))
+	assert.True(t, isNotAllowedTag("")(allowedTags))
+	assert.True(t, isNotAllowedTag("latest")(nil))
+	assert.True(t, isNotAllowedTag("latest")([]string{}))
+}
