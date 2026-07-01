@@ -8,6 +8,8 @@ import (
 	F "github.com/IBM/fp-go/v2/function"
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	IOEF "github.com/IBM/fp-go/v2/ioeither/file"
+
+	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
 var (
@@ -45,7 +47,7 @@ func FileResolver(path string) IOE.IOEither[error, DockerfileResource] {
 	return F.Pipe1(
 		F.Pipe2(
 			path,
-			E.FromPredicate(isNonBlank, func(string) error {
+			E.FromPredicate(predord.IsNonBlank, func(string) error {
 				return errors.New("dockerfile path is required")
 			}),
 			E.Map[error](func(p string) DockerfileResource {
