@@ -55,3 +55,11 @@ func Contains[E comparable](value E) Pred.Predicate[[]E] {
 func NotContains[E comparable](value E) Pred.Predicate[[]E] {
 	return F.Pipe1(Contains(value), Pred.Not)
 }
+
+// MemberOf returns a Predicate[[]E] true when value is equal (per eq) to
+// any element of the slice.
+func MemberOf[E any](eq EQ.Eq[E]) func(value E) Pred.Predicate[[]E] {
+	return func(value E) Pred.Predicate[[]E] {
+		return A.Any(EQ.Equals(eq)(value))
+	}
+}
