@@ -31,3 +31,14 @@ func TestNotMemberOf_string(t *testing.T) {
 	assert.True(t, isNotAllowedTag("latest")(nil))
 	assert.True(t, isNotAllowedTag("latest")([]string{}))
 }
+
+func TestIntersect_string(t *testing.T) {
+	knownSkills := []string{"fp-go", "fp-go-http", "fp-go-lens"}
+	requested := []string{"fp-go-http", "fp-go-lens", "fp-go-pr-review"}
+
+	got := Intersect(predord.StringEq)(knownSkills)(requested)
+
+	assert.Equal(t, []string{"fp-go-http", "fp-go-lens"}, got)
+	assert.Empty(t, Intersect(predord.StringEq)(nil)(requested))
+	assert.Empty(t, Intersect(predord.StringEq)(knownSkills)(nil))
+}

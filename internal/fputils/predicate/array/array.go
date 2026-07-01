@@ -70,3 +70,15 @@ func NotMemberOf[E any](eq EQ.Eq[E]) func(value E) Pred.Predicate[[]E] {
 		return F.Pipe1(MemberOf(eq)(value), Pred.Not)
 	}
 }
+
+// Intersect returns the set intersection of two slices: the elements of
+// current that are also members (per eq) of other.
+func Intersect[E any](eq EQ.Eq[E]) func(other []E) func(current []E) []E {
+	return func(other []E) func(current []E) []E {
+		return F.Pipe2(
+			other,
+			F.Flip(MemberOf(eq)),
+			A.Filter[E],
+		)
+	}
+}
