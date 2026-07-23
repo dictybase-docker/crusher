@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	A "github.com/IBM/fp-go/v2/array"
 	E "github.com/IBM/fp-go/v2/either"
@@ -16,21 +15,13 @@ import (
 	iof "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
 	Pred "github.com/IBM/fp-go/v2/predicate"
-	Str "github.com/IBM/fp-go/v2/string"
 
 	FP "github.com/dictybase-docker/crusher/internal/fp"
+	predarrays "github.com/dictybase-docker/crusher/internal/fputils/predicate/array"
+	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
 var (
-	// isBlank is true when the input becomes empty after trimming whitespace.
-	isBlank = F.Pipe1(
-		Str.IsEmpty,
-		Pred.ContraMap(strings.TrimSpace),
-	)
-
-	// isNonBlank is the negation of isBlank.
-	isNonBlank = Pred.Not(isBlank)
-
 	// validBasenameRegex ensures basename has at least one letter or digit.
 	validBasenameRegex = regexp.MustCompile(`[a-zA-Z0-9]`)
 
@@ -63,17 +54,17 @@ func NormalizeInput(input Input) Input {
 	return Input{
 		ImageName: F.Pipe2(
 			input.ImageName,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return DefaultImageName }),
 		),
 		ContainerName: F.Pipe2(
 			input.ContainerName,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(GenerateName),
 		),
 		WorkspacePath: F.Pipe2(
 			input.WorkspacePath,
-			O.FromPredicate(isNonBlank),
+			O.FromPredicate(predord.IsNonBlank),
 			O.GetOrElse(func() string { return "." }),
 		),
 		ConfigPath:  input.ConfigPath,
@@ -197,7 +188,7 @@ func resolveWorkspace(input Input) E.Either[error, Input] {
 func validateVolumes(input Input) E.Either[error, Input] {
 	return F.Pipe2(
 		input.Volumes,
-		O.FromPredicate(func(vols []string) bool { return len(vols) > 0 }),
+		O.FromPredicate(predarrays.IsNonEmpty[string]()),
 		O.Fold(
 			func() E.Either[error, Input] { return E.Of[error](input) },
 			func(vols []string) E.Either[error, Input] {
@@ -230,7 +221,7 @@ func validateVolumePath(vol string) E.Either[error, string] {
 	return F.Pipe3(
 		vol,
 		E.FromPredicate(
-			isNonBlank,
+			predord.IsNonBlank,
 			func(string) error {
 				return errors.New("volume path cannot be blank")
 			},

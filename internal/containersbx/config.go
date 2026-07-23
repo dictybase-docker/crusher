@@ -5,6 +5,8 @@ import (
 	IOE "github.com/IBM/fp-go/v2/ioeither"
 	FILE "github.com/IBM/fp-go/v2/ioeither/file"
 	O "github.com/IBM/fp-go/v2/option"
+
+	predord "github.com/dictybase-docker/crusher/internal/fputils/predicate/ord"
 )
 
 // ReadConfig reads the user's crush.json or returns the default OpenRouter config.
@@ -12,7 +14,7 @@ func ReadConfig(enriched Input) IOE.IOEither[error, genState] {
 	return F.Pipe3(
 		enriched.ConfigPath,
 		// string -> Option[string]  (None if blank)
-		O.FromPredicate(isNonBlank),
+		O.FromPredicate(predord.IsNonBlank),
 		// Option[string] -> IOEither[error, string]
 		O.Fold(
 			func() IOE.IOEither[error, string] {
