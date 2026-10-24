@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/IBM/fp-go/v2 v2.3.76
-	github.com/gookit/color v1.6.2
+	github.com/gookit/color v1.6.3
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v3 v3.14.0
 )
